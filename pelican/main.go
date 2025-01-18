@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"os/exec"
 	"sync"
 
@@ -24,6 +25,7 @@ type StreamProcessor struct {
 }
 
 func main() {
+
 	// rtsp listening
 	client := gortsplib.Client{}
 
@@ -52,8 +54,12 @@ func main() {
 
 	client.OnPacketRTPAny(func(media *description.Media, forma format.Format, pkt *rtp.Packet) {
 		log.Printf("RTP packet from media %v\n", media)
+		if media.Type == "audio" {
+
+		}
 	})
 
+	// play
 	_, err = client.Play(nil)
 	if err != nil {
 		panic(err)
@@ -61,7 +67,7 @@ func main() {
 
 	panic(client.Wait())
 
-	//cut out the audio with ffmpeg
+	//cut out the audio with ffmpeg into wav file
 
 	// send audio to parrot microservice via grpc
 

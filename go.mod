@@ -3,7 +3,6 @@ module muse
 go 1.23.3
 
 require (
-	github.com/aler9/gortsplib/v2 v2.2.2
 	github.com/bluenviron/gortsplib/v4 v4.12.1
 	github.com/pion/rtp v1.8.7-0.20240429002300-bc5124c9d0d0
 )
