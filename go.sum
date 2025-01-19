@@ -1,5 +1,3 @@
-github.com/aler9/gortsplib/v2 v2.2.2 h1:tTw8pdKSOEjlZjjE1S4ftXPHJkYOqjNNv3hjQ0Nto9M=
-github.com/aler9/gortsplib/v2 v2.2.2/go.mod h1:k6uBVHGwsIc/0L5SLLqWwi6bSJUb4VR0HfvncyHlKQI=
 github.com/bluenviron/gortsplib/v4 v4.12.1 h1:24wjrIXLrfwn3bcZR3eXviEAJxezHcqTpekqvnsaRic=
 github.com/bluenviron/gortsplib/v4 v4.12.1/go.mod h1:xfaZE+0oRX+4z4THWi9Y59qLE5zIVzzjR5gq6k/H8lQ=
 github.com/bluenviron/mediacommon v1.13.3 h1:PgprN9mAd/F5ew7Ym+UZCiCJstQVT5mZXtmN9JZvv4Y=

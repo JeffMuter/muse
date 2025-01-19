@@ -1,0 +1,17 @@
+syntax = "proto3";
+package file
+option go_package = "pkg/file";
+
+service AudioFileService {
+rpc UploadFile(stream FileChunk) returns (UploadStatus);
+}
+
+message FileChunk {
+	byyes content = 1;
+	string filename = 2;
+}
+
+message UploadStatus {
+	bool success = 1;
+	string message = 2;
+}

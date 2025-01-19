@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"os"
+	"muse/pelican/audio"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
@@ -52,10 +54,24 @@ func main() {
 		panic(err)
 	}
 
+	audioHandler := audio.NewAudioHandler()
+
+	ticker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for range ticker.C {
+			outputPath := fmt.Sprintf("audio_%d.wav", time.Now().Unix())
+			if err := audioHandler.ConvertToWav(outputPath); err != nil {
+				log.Printf("Failed to convert audio: %v", err)
+				continue
+			}
+			// TODO: Send to gRPC service
+		}
+	}()
+
 	client.OnPacketRTPAny(func(media *description.Media, forma format.Format, pkt *rtp.Packet) {
 		log.Printf("RTP packet from media %v\n", media)
 		if media.Type == "audio" {
-
+			audioHandler.HandlePacket(media, forma, pkt)
 		}
 	})
 
@@ -65,10 +81,11 @@ func main() {
 		panic(err)
 	}
 
-	panic(client.Wait())
+	//	panic(client.Wait())
 
 	//cut out the audio with ffmpeg into wav file
 
 	// send audio to parrot microservice via grpc
 
+	defer ticker.Stop() // stop ticker when program ends.
 }
