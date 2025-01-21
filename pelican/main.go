@@ -73,6 +73,7 @@ func main() {
 		if media.Type == "audio" {
 			audioHandler.HandlePacket(media, forma, pkt)
 		}
+
 	})
 
 	// play

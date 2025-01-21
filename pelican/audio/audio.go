@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/bluenviron/gortsplib/v4/pkg/description"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
@@ -12,9 +13,12 @@ import (
 )
 
 type AudioHandler struct {
-	buffer     bytes.Buffer
-	bufferLock sync.Mutex
-	format     format.Format
+	buffer        bytes.Buffer
+	bufferLock    sync.Mutex
+	format        format.Format
+	maxBufferSize int64
+	flushInterval time.Duration
+	lastFlush     time.Time
 }
 
 func NewAudioHandler() *AudioHandler {
@@ -24,11 +28,19 @@ func NewAudioHandler() *AudioHandler {
 // HandlePacket processes incoming RTP packets
 func (h *AudioHandler) HandlePacket(media *description.Media, forma format.Format, pkt *rtp.Packet) {
 	h.bufferLock.Lock()
-	h.buffer.Write(pkt.Payload)
-	h.bufferLock.Unlock()
+	defer h.bufferLock.Unlock()
+	if h.format == nil {
+		// Store format information for conversion
+		h.format = forma
+	}
 
-	// Store format information for conversion
-	h.format = forma
+	// Check buffer size before writing
+	if h.buffer.Len() >= int(h.maxBufferSize) {
+		// Handle buffer full condition
+		return
+	}
+
+	h.buffer.Write(pkt.Payload)
 }
 
 // ConvertToWav converts buffered audio data to WAV format using FFmpeg
