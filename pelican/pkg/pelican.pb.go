@@ -4,7 +4,7 @@
 // 	protoc        v5.28.3
 // source: pelican.proto
 
-package file
+package pkg
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

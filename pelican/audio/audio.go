@@ -14,6 +14,7 @@ import (
 
 type AudioHandler struct {
 	buffer        bytes.Buffer
+	bufferQueu    *[]bytes.Buffer // will use once we have more data to aggregate, and buffer could pop
 	bufferLock    sync.Mutex
 	format        format.Format
 	maxBufferSize int64
@@ -22,7 +23,10 @@ type AudioHandler struct {
 }
 
 func NewAudioHandler() *AudioHandler {
-	return &AudioHandler{}
+
+	return &AudioHandler{
+		maxBufferSize: 10485760,
+	}
 }
 
 // HandlePacket processes incoming RTP packets
