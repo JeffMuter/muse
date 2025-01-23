@@ -7,10 +7,25 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/description"
 	"github.com/bluenviron/gortsplib/v4/pkg/format"
+	"github.com/go-audio/wav"
 	"github.com/pion/rtp"
 )
+
+type Config struct {
+	ListenAddress string
+	PathName      string
+	OutputFile    string
+}
+
+type AudioProcessor struct {
+	config     Config
+	server     *gortsplib.Server
+	wavWriter  *wav.Writer
+	audioCodev *rtspcodecs.Audio
+}
 
 type AudioHandler struct {
 	buffer        bytes.Buffer

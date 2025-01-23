@@ -11,6 +11,9 @@ require (
 
 require (
 	github.com/bluenviron/mediacommon v1.13.3 // indirect
+	github.com/go-audio/audio v1.0.0 // indirect
+	github.com/go-audio/riff v1.0.0 // indirect
+	github.com/go-audio/wav v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.15 // indirect

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package muse.pelican.pkg.file;
+
+option go_package = "muse/pelican/pkg/file";
+
+// Service definition for audio packet streaming
+service AudioStreamService {
+  // Stream audio packets from the RTSP server to the downstream service
+  rpc StreamAudio (stream AudioPacket) returns (StreamResponse) {}
+}
+
+// AudioPacket represents a single chunk of audio data extracted from RTSP
+message AudioPacket {
+  // Raw audio data bytes
+  bytes audio_data = 1;
+  
+  // Timestamp of the audio packet (unix timestamp in milliseconds)
+  int64 timestamp = 2;
+  
+  // Source identifier for the RTSP stream
+  string stream_id = 3;
+  
+  // Audio format information
+  AudioFormat format = 4;
+}
+
+// AudioFormat contains the necessary metadata for processing the audio
+message AudioFormat {
+  // Sample rate in Hz (e.g., 16000, 44100)
+  int32 sample_rate = 1;
+  
+  // Number of audio channels (1 for mono, 2 for stereo)
+  int32 channels = 2;
+  
+  // Audio encoding format (e.g., "pcm", "aac")
+  string encoding = 3;
+}
+
+// Response from the downstream service
+message StreamResponse {
+  // Status of the stream processing
+  bool success = 1;
+  
+  // Error message if processing failed
+  string error = 2;
+}
