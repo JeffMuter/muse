@@ -4,7 +4,7 @@
 // - protoc             v5.28.3
 // source: pelican.proto
 
-package pkg
+package file
 
 import (
 	context "context"
@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AudioFileService_UploadFile_FullMethodName  = "/file.AudioFileService/UploadFile"
-	AudioFileService_HealthCheck_FullMethodName = "/file.AudioFileService/HealthCheck"
+	AudioFileService_UploadFile_FullMethodName  = "/pkg.AudioFileService/UploadFile"
+	AudioFileService_HealthCheck_FullMethodName = "/pkg.AudioFileService/HealthCheck"
 )
 
 // AudioFileServiceClient is the client API for AudioFileService service.
@@ -166,7 +166,7 @@ func _AudioFileService_HealthCheck_Handler(srv interface{}, ctx context.Context,
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AudioFileService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "file.AudioFileService",
+	ServiceName: "pkg.AudioFileService",
 	HandlerType: (*AudioFileServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

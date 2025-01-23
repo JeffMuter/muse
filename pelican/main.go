@@ -6,89 +6,71 @@ import (
 	"io"
 	"log"
 	"muse/pelican/audio"
-	"muse/pelican/pkg"
+	pb "muse/pelican/pkg/file"
 	"os"
-	"os/exec"
-	"sync"
+	"os/signal"
+	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
 	"github.com/bluenviron/gortsplib/v4/pkg/description"
-	"github.com/bluenviron/gortsplib/v4/pkg/format"
 	"github.com/pion/rtp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type StreamProcessor struct {
-	inputStreams []string
-	outputAddr   string
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
-	processes    []*exec.Cmd
-	mu           sync.Mutex
+const chunkSize = 64 * 1024 // 64KB chunks
+
+type GRPCClient struct {
+	conn   *grpc.ClientConn
+	client pb.AudioFileServiceClient
 }
-	
-	const (
-    chunkSize = 64 * 1024 // 64KB chunks
-    grpcTimeout = 5 * time.Minute
-)
-	
-	 type GRPCCl struct {
-    client     pkg.AudioFileServiceClient
-    conn       *grpc.ClientConn
-}
-	
+
 func NewGRPCClient(serverAddr string) (*GRPCClient, error) {
-    conn, err := grpc.Dial(serverAddr, 
-        grpc.WithTransportCredentials(insecure.NewCredentials()),
-        grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1024*1024*20)), // 20MB
-		)		
+	// Create a connection to the server
+	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to gRPC server: %v", err)
+		return nil, fmt.Errorf("failed to connect: %v", err)
 	}
 
+	client := pb.NewAudioFileServiceClient(conn)
 	return &GRPCClient{
-		client: pkg.NewAudioFileServiceClient(conn),
 		conn:   conn,
+		client: client,
 	}, nil
 }
 
-func (g *GRPCClient) Close() error {
-	return g.conn.Close()
+func (c *GRPCClient) Close() {
+	if c.conn != nil {
+		c.conn.Close()
+	}
 }
 
-func (g *GRPCClient) UploadWavFile(ctx context.Context, filepath string) (*pkg.UploadStatus, error) {
-	file, err := os.Open(filepath)
+func (c *GRPCClient) UploadWavFile(ctx context.Context, filePath string) (*pb.UploadStatus, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %v", err)
 	}
 	defer file.Close()
 
+	// Get file info for total size
 	fileInfo, err := file.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get file info: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, grpcTimeout)
-	defer cancel()
-
-	stream, err := g.client.UploadFile(ctx)
+	// Create upload stream
+	stream, err := c.client.UploadFile(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create upload stream: %v", err)
 	}
 
-	// Send first chunk with metadata
-	firstChunk := &pkg.FileChunk{
-		FileName:    filepath.Base(filepath),
-		ContentType: "audio/wav",
-		TotalSize:   fileInfo.Size(),
-		ChunkIndex:  0,
-	}
-
+	// Prepare buffer for chunks
 	buffer := make([]byte, chunkSize)
+	chunkIndex := int32(0)
+
 	for {
 		n, err := file.Read(buffer)
 		if err == io.EOF {
@@ -98,127 +80,155 @@ func (g *GRPCClient) UploadWavFile(ctx context.Context, filepath string) (*pkg.U
 			return nil, fmt.Errorf("error reading file: %v", err)
 		}
 
-		chunk := &pkg.FileChunk{
-			ChunkData:  buffer[:n],
-			ChunkIndex: firstChunk.ChunkIndex,
-			IsLast:     false,
+		chunk := &pb.FileChunk{
+			ContentType: "audio/wav",
+			ChunkData:   buffer[:n],
+			ChunkIndex:  chunkIndex,
+			TotalSize:   fileInfo.Size(),
 		}
 
-		if firstChunk.ChunkIndex == 0 {
-			chunk.FileName = firstChunk.FileName
-			chunk.ContentType = firstChunk.ContentType
-			chunk.TotalSize = firstChunk.TotalSize
+		// Set additional metadata in the first chunk
+		if chunkIndex == 0 {
+			chunk.FileName = filepath.Base(filePath)
+		}
+
+		// Set isLast flag if this is the final chunk
+		if n < chunkSize {
+			chunk.IsLast = true
 		}
 
 		if err := stream.Send(chunk); err != nil {
 			return nil, fmt.Errorf("failed to send chunk: %v", err)
 		}
 
-		firstChunk.ChunkIndex++
+		chunkIndex++
 	}
 
-	// Send last empty chunk to signal completion
-	if err := stream.Send(&pkg.FileChunk{
-		ChunkIndex: firstChunk.ChunkIndex,
-		rr := stream.Send(&pkg.FileChunk{
-	    ChunkIndex: firstChunk.ChunkIndex,
-		IsLast:     true,
-	}); err != nil {
-        return nil, fmt.Errorf("failed to send final chunk: %v", err)
+	// Close the stream and get the response
+	status, err := stream.CloseAndRecv()
+	if err != nil {
+		return nil, fmt.Errorf("failed to receive upload status: %v", err)
 	}
 
-    return stream.CloseAndRecv()
+	return status, nil
 }
-	
-	 (g *GRPCClient) HealthCheck(ctx context.Context) (*pkg.HealthCheckResponse, error) {
-ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-    
-    return g.client.HealthCheck(ctx, &pkg.HealthCheckRequest{})
+
+func (c *GRPCClient) HealthCheck(ctx context.Context) (*pb.HealthCheckResponse, error) {
+	return c.client.HealthCheck(ctx, &pb.HealthCheckRequest{})
 }
 
 func main() {
-    ctx := context.Background()
-    
-    // Initialize gRPC client
-    grpcClient, err := NewGRPCClient("your-server-address:port")
-    if err != nil {
-        log.Fatalf("Failed to create gRPC client: %v", err)
-    }
-    defer grpcClient.Close()
+	// Configuration
+	config := struct {
+		rtspURL        string
+		grpcServerAddr string
+		recordInterval time.Duration
+	}{
+		rtspURL:        "rtsp://localhost:8554/stream",
+		grpcServerAddr: "localhost:50051",
+		recordInterval: 30 * time.Second,
+	}
 
-    // Initialize RTSP client
-    rtspClient := gortsplib.Client{}
-    
-    // Parse URL
-    url, err := base.ParseURL("rtsp://localhost:8554/stream")
-    if err != nil {
-        log.Fatalf("Failed to parse URL: %v", err)
-    }
+	// Initialize GRPC client
+	grpcClient, err := NewGRPCClient(config.grpcServerAddr)
+	if err != nil {
+		log.Fatalf("Failed to create gRPC client: %v", err)
+	}
+	defer grpcClient.Close()
 
-    // Connect to RTSP stream
-    err = rtspClient.Start(url.Scheme, url.Host)
-    if err != nil {
-        log.Fatalf("Failed to start RTSP client: %v", err)
-    }
-    defer rtspClient.Close()
+	// Create RTSP client
+	rtspClient := gortsplib.Client{}
 
-    desc, _, err := rtspClient.Describe(url)
-    if err != nil {
-        log.Fatalf("Failed to describe RTSP stream: %v", err)
-    }
+	// Parse RTSP URL
+	url, err := base.ParseURL(config.rtspURL)
+	if err != nil {
+		log.Fatalf("Failed to parse RTSP URL: %v", err)
+	}
 
-    err = rtspClient.SetupAll(desc.BaseURL, desc.Medias)
-    if err != nil {
-        log.Fatalf("Failed to setup RTSP medias: %v", err)
-    }
+	// Connect to RTSP server
+	err = rtspClient.Start(url.Scheme, url.Host)
+	if err != nil {
+		log.Fatalf("Failed to connect to RTSP server: %v", err)
+	}
+	defer rtspClient.Close()
 
-    audioHandler := audio.NewAudioHandler()
+	// Get stream description
+	desc, _, err := rtspClient.Describe(url)
+	if err != nil {
+		log.Fatalf("Failed to get stream description: %v", err)
+	}
 
-    // Create a ticker for periodic WAV file creation and upload
-    ticker := time.NewTicker(5 * time.Minute)
-    defer ticker.Stop()
+	// Find and setup audio media
+	var audioMedia *description.Media
+	for _, media := range desc.Medias {
+		if media.Type == "audio" {
+			audioMedia = media
+			break
+		}
+	}
 
-    go func() {
-        for range ticker.C {
-            outputPath := fmt.Sprintf("audio_%d.wav", time.Now().Unix())
-            if err := audioHandler.ConvertToWav(outputPath); err != nil {
-                log.Printf("Failed to convert audio: %v", err)
-                continue
-            }
+	if audioMedia == nil {
+		log.Fatal("No audio stream found")
+	}
 
-            // Upload the WAV file
-            status, err := grpcClient.UploadWavFile(ctx, outputPath)
-            if err != nil {
-                log.Printf("Failed to upload WAV file: %v", err)
-                continue
-            }
+	// Setup the audio stream
+	_, err = rtspClient.Setup(desc.BaseURL, audioMedia, 0, 0)
+	if err != nil {
+		log.Fatalf("Failed to setup audio stream: %v", err)
+	}
 
-            if status.Success {
-                log.Printf("Successfully uploaded file to: %s", status.S3Path)
-                // Clean up local file after successful upload
-                if err := os.Remove(outputPath); err != nil {
-                    log.Printf("Failed to remove temporary file: %v", err)
-                }
-            } else {
-                log.Printf("Upload failed: %s", status.Message)
-            }
-        }
-    }()
+	// Initialize audio handler
+	audioHandler := audio.NewAudioHandler()
 
-    rtspClient.OnPacketRTPAny(func(media *description.Media, forma format.Format, pkt *rtp.Packet) {
-        if media.Type == "audio" {
-            audioHandler.HandlePacket(media, forma, pkt)
-        }
-    })
+	// Start stream
+	_, err = rtspClient.Play(nil)
+	if err != nil {
+		log.Fatalf("Failed to start playing: %v", err)
+	}
 
-    // Start playing the RTSP stream
-    if _, err = rtspClient.Play(nil); err != nil {
-        log.Fatalf("Failed to play RTSP stream: %v", err)
-    }
+	// Create context for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-    // Wait for interrupt signal
-    sigChan := make(chan os.Signal, 1)
-    signal.Notify(sigChan, os.Interrupt)
-    <-sigChan
+	// Handle audio packets
+	rtspClient.OnPacketRTP(audioMedia, audioMedia.Formats[0], func(pkt *rtp.Packet) {
+		audioHandler.HandlePacket(audioMedia, audioMedia.Formats[0], pkt)
+	})
+
+	// Start periodic recording and upload
+	go func() {
+		ticker := time.NewTicker(config.recordInterval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				wavFile := fmt.Sprintf("audio_%d.wav", time.Now().Unix())
+
+				err := audioHandler.ConvertToWav(wavFile)
+				if err != nil {
+					log.Printf("Failed to convert to WAV: %v", err)
+					continue
+				}
+
+				status, err := grpcClient.UploadWavFile(ctx, wavFile)
+				if err != nil {
+					log.Printf("Failed to upload file: %v", err)
+				} else {
+					log.Printf("Successfully uploaded file: %s", status.S3Path)
+				}
+
+				os.Remove(wavFile)
+			}
+		}
+	}()
+
+	// Wait for interrupt signal
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	log.Println("Shutting down gracefully...")
 }

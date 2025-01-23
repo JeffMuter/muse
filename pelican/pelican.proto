@@ -1,5 +1,5 @@
 syntax = "proto3";
-package file;
+package pkg;
 option go_package = "pkg/file";
 
 // FileChunk represents a chunk of the audio file being transferred
