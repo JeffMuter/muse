@@ -124,6 +124,11 @@ func (sh *ServerHandler) OnRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*bas
 	ctx.Session.OnPacketRTPAny(func(medi *description.Media, forma format.Format, pkt *rtp.Packet) {
 		// route the RTP packet to all readers
 		sh.stream.WritePacketRTP(medi, pkt)
+
+		if medi.Type == "audio" {
+			//extract and stream audio here.
+			audioData := pkt.Payload
+		}
 	})
 
 	return &base.Response{
