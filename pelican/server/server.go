@@ -2,6 +2,7 @@ package server
 
 import (
 	"log"
+	"muse/pelican/pkg/file"
 	"sync"
 
 	"github.com/pion/rtp"
@@ -124,10 +125,22 @@ func (sh *ServerHandler) OnRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*bas
 	ctx.Session.OnPacketRTPAny(func(medi *description.Media, forma format.Format, pkt *rtp.Packet) {
 		// route the RTP packet to all readers
 		sh.stream.WritePacketRTP(medi, pkt)
-
 		if medi.Type == "audio" {
-			//extract and stream audio here.
-			audioData := pkt.Payload
+			// Get sample rate from clockrate
+			sampleRate := medi.Formats[0].ClockRate()
+
+			// For MPEG4Auio, typically 1 or 2 channels
+			channels := 2 // Default stereo, may need to be extracted from Config
+
+			// Encoding is MPEG4-GENERIC
+			encoding := "mpeg4-generic"
+
+			audioFormat := &file.AudioFormat{
+				SampleRate: int32(sampleRate),
+				Channels:   int32(channels),
+				Encoding:   encoding,
+			}
+			log.Printf("Media type: %s, Format type: %T, Format details: %+v", medi.Type, forma, forma)
 		}
 	})
 
