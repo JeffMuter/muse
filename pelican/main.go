@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"muse/pelican/server"
+	"os/exec"
+	"time"
 
 	"github.com/bluenviron/gortsplib/v4"
 )
@@ -20,8 +22,25 @@ func main() {
 		MulticastRTCPPort: 8003,
 	}
 
-	// start server and wait until a fatal error
-	log.Printf("server is ready")
-	panic(h.S.StartAndWait())
+	// Start server in a goroutine
+	go func() {
+		log.Printf("server is ready")
+		if err := h.S.StartAndWait(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// Wait and retry FFmpeg until stream is available
+	for {
+		cmd := exec.Command("ffmpeg", "-i", "rtsp://localhost:8554/stream", "-vn", "-acodec", "libmp3lame", "output.mp3")
+		log.Printf("Attempting to connect to stream...")
+
+		if err := cmd.Run(); err != nil {
+			log.Printf("Stream not ready, retrying in 5 seconds...")
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		break
+	}
 
 }

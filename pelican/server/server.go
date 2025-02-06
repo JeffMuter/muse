@@ -3,12 +3,9 @@ package server
 import (
 	"fmt"
 	"log"
-	"muse/pelican/pkg/file"
 	"sync"
 
 	"github.com/pion/rtp"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/bluenviron/gortsplib/v4"
 	"github.com/bluenviron/gortsplib/v4/pkg/base"
@@ -129,29 +126,33 @@ func (sh *ServerHandler) OnRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*bas
 		// route the RTP packet to all readers
 		sh.stream.WritePacketRTP(medi, pkt)
 		if medi.Type == "audio" {
+			fmt.Println("audio packet detected")
+
+			// TODO: this section could be un-commented if packet processing is the way to go
+
 			// Get sample rate from clockrate
-			sampleRate := medi.Formats[0].ClockRate()
+			//	sampleRate := medi.Formats[0].ClockRate()
 			// For MPEG4Auio, typically 1 or 2 channels
-			channels := 2 // Default stereo, may need to be extracted from Config
+			//	channels := 2 // Default stereo, may need to be extracted from Config
 			// Encoding is MPEG4-GENERIC
-			encoding := "mpeg4-generic"
-			audioFormat := &file.AudioFormat{
-				SampleRate: int32(sampleRate),
-				Channels:   int32(channels),
-				Encoding:   encoding,
-			}
-			payload := pkt.Payload // feels like this is required... not sure where.
-			timestamp := pkt.Timestamp
+			//	encoding := "mpeg4-generic"
+			//	audioFormat := &file.AudioFormat{
+			//		SampleRate: int32(sampleRate),
+			//		Channels:   int32(channels),
+			//		Encoding:   encoding,
+			//	}
+			//	payload := pkt.Payload // feels like this is required... not sure where.
+			//	timestamp := pkt.Timestamp
 
-			//create connection to gRPC
-			conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+			// create connection to gRPC
+			//	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 
-			if err != nil {
-				fmt.Printf("grpc failed to connect...: %v", err)
-				return
-			}
+			//	if err != nil {
+			//		fmt.Printf("grpc failed to connect...: %v", err)
+			//		return
+			//	}
 
-			log.Printf("Media type: %s, Format type: %T, Format details: %+v", medi.Type, forma, forma)
+			//	log.Printf("Media type: %s, Format type: %T, Format details: %+v", medi.Type, forma, forma)
 		}
 	})
 

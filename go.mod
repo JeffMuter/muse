@@ -4,6 +4,7 @@ go 1.23.3
 
 require (
 	github.com/bluenviron/gortsplib/v4 v4.12.1
+	github.com/go-audio/wav v1.1.0
 	github.com/pion/rtp v1.8.7-0.20240429002300-bc5124c9d0d0
 	google.golang.org/grpc v1.69.4
 	google.golang.org/protobuf v1.36.3
@@ -13,7 +14,6 @@ require (
 	github.com/bluenviron/mediacommon v1.13.3 // indirect
 	github.com/go-audio/audio v1.0.0 // indirect
 	github.com/go-audio/riff v1.0.0 // indirect
-	github.com/go-audio/wav v1.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.15 // indirect
