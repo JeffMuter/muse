@@ -30,9 +30,20 @@ func main() {
 		}
 	}()
 
-	// Wait and retry FFmpeg until stream is available
+	// Create a unique filename for this recording
+	timestamp := time.Now().Format("20060102-150405")
+	outputFile := "output-" + timestamp + ".mp3"
+
+	// FFmpeg can't execute until the server is running
 	for {
-		cmd := exec.Command("ffmpeg", "-i", "rtsp://localhost:8554/stream", "-vn", "-acodec", "libmp3lame", "output.mp3")
+		cmd := exec.Command("ffmpeg",
+			"-i", "rtsp://localhost:8554/stream",
+			"-t", "300", // 5 minute vid then restart
+			"-vn", // skip video
+			"-acodec", "libmp3lame",
+			"-ab", "128k", // Audio bitrate explicitly set
+			outputFile, // output file
+		)
 		log.Printf("Attempting to connect to stream...")
 
 		if err := cmd.Run(); err != nil {
@@ -42,5 +53,4 @@ func main() {
 		}
 		break
 	}
-
 }
