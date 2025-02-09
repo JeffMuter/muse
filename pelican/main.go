@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+
 	// configure the server
 	h := &server.ServerHandler{}
 	h.S = &gortsplib.Server{

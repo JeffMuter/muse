@@ -11,10 +11,12 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/bluenviron/mediacommon v1.13.3 // indirect
 	github.com/go-audio/audio v1.0.0 // indirect
 	github.com/go-audio/riff v1.0.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.15 // indirect
 	github.com/pion/sdp/v3 v3.0.9 // indirect
