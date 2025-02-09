@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"sync"
 
@@ -126,7 +125,6 @@ func (sh *ServerHandler) OnRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*bas
 		// route the RTP packet to all readers
 		sh.stream.WritePacketRTP(medi, pkt)
 		if medi.Type == "audio" {
-			fmt.Println("audio packet detected")
 
 			// TODO: this section could be un-commented if packet processing is the way to go
 

@@ -14,7 +14,7 @@ func main() {
 		"ffmpeg",
 		"-re",
 		"-stream_loop", "-1",
-		"-i", "./vids/WIN_20250113_18_38_07_Pro.mp4",
+		"-i", "./vids/wendypanel.mp4",
 		"-c", "copy",
 		"-f", "rtsp",
 		"-rtsp_transport", "tcp",

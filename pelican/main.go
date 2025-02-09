@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"muse/pelican/cloud"
 	"muse/pelican/server"
 	"os/exec"
 	"time"
@@ -27,31 +29,37 @@ func main() {
 	go func() {
 		log.Printf("server is ready")
 		if err := h.S.StartAndWait(); err != nil {
-			log.Fatal(err)
+			fmt.Printf("start and wait error: %v\n", err)
+			log.Fatal()
 		}
 	}()
 
-	// Create a unique filename for this recording
-	timestamp := time.Now().Format("20060102-150405")
-	outputFile := "output-" + timestamp + ".mp3"
-
 	// FFmpeg can't execute until the server is running
 	for {
+
+		// Create a unique filename for this recording
+		timestamp := time.Now().Format("20060102-150405")
+		outputFileName := "output-" + timestamp + ".mp3"
+
 		cmd := exec.Command("ffmpeg",
 			"-i", "rtsp://localhost:8554/stream",
-			"-t", "300", // 5 minute vid then restart
-			"-vn", // skip video
+			"-t", "30", // 30sec stream then restart
+			"-vn", // cut out video, only audio added to file
 			"-acodec", "libmp3lame",
 			"-ab", "128k", // Audio bitrate explicitly set
-			outputFile, // output file
+			outputFileName, // output file
 		)
 		log.Printf("Attempting to connect to stream...")
+		err := cloud.UploadFileToS3(outputFileName)
+		if err != nil {
+			fmt.Printf(" error uploading file to S3: %v\n", err)
+		}
 
 		if err := cmd.Run(); err != nil {
 			log.Printf("Stream not ready, retrying in 5 seconds...")
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		break
+
 	}
 }
