@@ -49,11 +49,6 @@ func main() {
 			"-ab", "128k", // Audio bitrate explicitly set
 			outputFileName, // output file
 		)
-		log.Printf("Attempting to connect to stream...")
-		err := cloud.UploadFileToS3(outputFileName)
-		if err != nil {
-			fmt.Printf(" error uploading file to S3: %v\n", err)
-		}
 
 		if err := cmd.Run(); err != nil {
 			log.Printf("Stream not ready, retrying in 5 seconds...")
@@ -61,5 +56,11 @@ func main() {
 			continue
 		}
 
+		// possibly rewrite this as a go routine, so it doesn't hold up the next recording...
+		err := cloud.UploadFileToS3(outputFileName)
+		if err != nil {
+			fmt.Printf("error trying to upload to s3: %v\n", err)
+		}
+		fmt.Println("S3 file upload complete...")
 	}
 }
