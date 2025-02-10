@@ -3,15 +3,16 @@ module muse
 go 1.23.3
 
 require (
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/bluenviron/gortsplib/v4 v4.12.1
 	github.com/go-audio/wav v1.1.0
+	github.com/joho/godotenv v1.5.1
 	github.com/pion/rtp v1.8.7-0.20240429002300-bc5124c9d0d0
 	google.golang.org/grpc v1.69.4
 	google.golang.org/protobuf v1.36.3
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/bluenviron/mediacommon v1.13.3 // indirect
 	github.com/go-audio/audio v1.0.0 // indirect
 	github.com/go-audio/riff v1.0.0 // indirect

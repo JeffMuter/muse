@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/joho/godotenv"
 )
 
 // take the unique filepath for this audio file, open, then send the data to our aws bucket
@@ -17,11 +18,20 @@ func UploadFileToS3(filePath string) error {
 	// aws config
 	region := "us-east-2"
 
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("error loading env package")
+	}
+	awsAccessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	awsSecretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	fmt.Println(awsAccessKey)
+
 	awsSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 		Credentials: credentials.NewStaticCredentials(
-			accessKey,
-			secretKey,
+			awsAccessKey,
+			awsSecretKey,
+			"",
 		),
 	})
 	if err != nil {
