@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"muse/pelican/cloud"
+	"muse/pelican/router"
 	"muse/pelican/server"
+	"net/http"
 	"os/exec"
 	"time"
 
@@ -27,11 +29,18 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
-		log.Printf("server is ready")
+		log.Printf("rtsp server is ready")
 		if err := h.S.StartAndWait(); err != nil {
 			fmt.Printf("start and wait error: %v\n", err)
 			log.Fatal()
 		}
+	}()
+
+	// setup http server on this port, listens for the aws transcription responses.
+	go func() {
+		r := router.Router()
+		log.Printf("http server is ready")
+		log.Fatal(http.ListenAndServe(":8080", r))
 	}()
 
 	// FFmpeg can't execute until the server is running
