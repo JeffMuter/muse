@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"muse/pelican/cloud"
-	"muse/pelican/server"
 	"os/exec"
+	"pelican/cloud"
+	"pelican/server"
 	"time"
 
 	"github.com/bluenviron/gortsplib/v4"
