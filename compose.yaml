@@ -1,0 +1,16 @@
+services:
+  pelican:
+    build: 
+      context: ./pelican
+      dockerfile: Dockerfile
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    depends_on: 
+      - pelican
+  parrot:
+    build:
+      context: ./parrot
+      dockerfile: Dockerfile
+
