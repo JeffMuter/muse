@@ -16,4 +16,3 @@ RUN CGO_ENABLED=0 go build -o ./main
 
 # Command to run the application
 CMD ["./main"]
-
