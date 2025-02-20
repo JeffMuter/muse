@@ -18,7 +18,7 @@ func main() {
 		"-c", "copy",
 		"-f", "rtsp",
 		"-rtsp_transport", "tcp",
-		"rtsp://localhost:8554/stream",
+		"rtsp://pelican:8554/stream",
 	)
 
 	cmd.Stderr = os.Stderr
@@ -28,7 +28,7 @@ func main() {
 		log.Fatal("Failed to start stream:", err)
 	}
 
-	fmt.Println("Stream started at rtsp://localhost:8554/stream")
+	fmt.Println("Stream started at rtsp://pelican:8554/stream")
 	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

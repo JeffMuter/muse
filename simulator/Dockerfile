@@ -1,6 +1,9 @@
 # ---- Step 1: Build Stage ----
 FROM golang:1.23-alpine
 
+# Install ffmpeg
+RUN apk add --no-cache ffmpeg
+
 # Set working directory inside the container
 WORKDIR /main
 
