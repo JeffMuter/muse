@@ -33,7 +33,6 @@ func main() {
 			log.Fatal()
 		}
 	}()
-
 	// FFmpeg can't execute until the server is running
 	for {
 
