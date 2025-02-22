@@ -39,8 +39,7 @@ func main() {
 		},
 	}))
 
-	sqsClient := sqs.New(sess)
-	bucketName, fileName, err := receiveMessages(sqsClient, queueUrl)
+	bucketName, fileName, err := receiveMessages(sess, queueUrl)
 	if err != nil {
 		fmt.Printf("no message read, or error: %v", err)
 		return
@@ -86,7 +85,7 @@ func getTranscriptionFileFromS3(sess *session.Session, bucketName, fileName stri
 
 // TODO: better err handling
 // receiveMessages takes in queue url, and if a message exists, returns the bucket name, file name of the desired file.
-func receiveMessages(svc *sqs.SQS, queueUrl string) (string, string, error) {
+func receiveMessages(sess *session.Session, queueUrl string) (string, string, error) {
 	var sqsMessage struct {
 		Records []struct {
 			S3 struct {
@@ -100,7 +99,9 @@ func receiveMessages(svc *sqs.SQS, queueUrl string) (string, string, error) {
 		} `json:"Records"`
 	}
 
-	resp, err := svc.ReceiveMessage(&sqs.ReceiveMessageInput{
+	sqsClient := sqs.New(sess)
+
+	resp, err := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(queueUrl),
 		MaxNumberOfMessages: aws.Int64(1),
 		WaitTimeSeconds:     aws.Int64(2),
@@ -118,7 +119,7 @@ func receiveMessages(svc *sqs.SQS, queueUrl string) (string, string, error) {
 	fmt.Printf("Processing message: %s\n", aws.StringValue(resp.Messages[0].Body))
 
 	// Delete the message
-	_, delErr := svc.DeleteMessage(&sqs.DeleteMessageInput{
+	_, delErr := sqsClient.DeleteMessage(&sqs.DeleteMessageInput{
 		QueueUrl:      aws.String(queueUrl),
 		ReceiptHandle: resp.Messages[0].ReceiptHandle,
 	})
