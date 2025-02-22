@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/joho/godotenv"
 )
@@ -38,10 +40,53 @@ func main() {
 	}))
 
 	sqsClient := sqs.New(sess)
-	receiveMessages(sqsClient, queueUrl)
+	bucketName, fileName, err := receiveMessages(sqsClient, queueUrl)
+	if err != nil {
+		fmt.Printf("no message read, or error: %v", err)
+		return
+	}
+	fmt.Printf("message received. bucketname: %s. fileName: %s.\n", bucketName, fileName)
+
+	err = getTranscriptionFileFromS3(sess, bucketName, fileName)
+	if err != nil {
+		fmt.Printf("getting file from s3 failed: %v\n", err)
+		return
+	}
+	fmt.Println("process finished")
 }
 
-func receiveMessages(svc *sqs.SQS, queueUrl string) (string, error) {
+// getTranscriptionFileFromS3 takes in a session, name of an s3 bucket, and a file in that bucket, and creates it in a local dir
+func getTranscriptionFileFromS3(sess *session.Session, bucketName, fileName string) error {
+	fmt.Println("begin to get file...")
+
+	localPath := filepath.Join("transcripts", filepath.Base(fileName))
+
+	file, err := os.Create(localPath)
+	if err != nil {
+		return fmt.Errorf("could not create file: %v\n", err)
+	}
+
+	defer file.Close()
+
+	downloader := s3manager.NewDownloader(sess)
+
+	numBytes, err := downloader.Download(file,
+		&s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(fileName),
+		})
+	if err != nil {
+		return fmt.Errorf("could not download file from s3 bucket: %v\n", err)
+	}
+
+	fmt.Println("Downloaded", file.Name(), numBytes, "bytes")
+
+	return nil
+}
+
+// TODO: better err handling
+// receiveMessages takes in queue url, and if a message exists, returns the bucket name, file name of the desired file.
+func receiveMessages(svc *sqs.SQS, queueUrl string) (string, string, error) {
 	var sqsMessage struct {
 		Records []struct {
 			S3 struct {
@@ -62,7 +107,11 @@ func receiveMessages(svc *sqs.SQS, queueUrl string) (string, error) {
 	})
 	if err != nil {
 		fmt.Println("Error receiving messages:", err)
-		return "", err
+		return "", "", err
+	}
+	if len(resp.Messages) == 0 {
+		fmt.Println("receiving messages failed, no messages.")
+		return "", "", fmt.Errorf("receiving messages failed, no messages.\n")
 	}
 
 	// Process the message
@@ -75,18 +124,12 @@ func receiveMessages(svc *sqs.SQS, queueUrl string) (string, error) {
 	})
 	if delErr != nil {
 		fmt.Println("Delete Error", delErr)
-		return
+		return "", "", err
 	}
 	fmt.Println("Message Deleted")
 
 	// Parse your SQS message into this struct
-	json.Unmarshal([]byte(resp.Messages[0].Body), &sqsMessage)
-}
+	json.Unmarshal([]byte(*resp.Messages[0].Body), &sqsMessage)
 
-func getTranscriptionFileFromS3(fileName string) error {
-	bucket := "https://musetranscriptions.s3.us-east-2.amazonaws.com/"
-
-	file, err := s3.GetObjectOutput(fileName)
-
-	return nil
+	return sqsMessage.Records[0].S3.Bucket.Name, sqsMessage.Records[0].S3.Object.Key, nil
 }
