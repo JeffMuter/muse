@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -15,6 +16,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/joho/godotenv"
 )
+
+type TranscriptJson struct {
+	Results struct {
+		Transcripts []struct {
+			Transcript string `json:"transcript"`
+		} `json:"transcripts"`
+	} `json:"results"`
+}
 
 func main() {
 	// Load .env file
@@ -52,6 +61,14 @@ func main() {
 		return
 	}
 	fmt.Println("process finished")
+
+	transcriptString, err := getTranscriptFromJsonFile(fileName)
+	if err != nil {
+		fmt.Printf("error getting transcript from json file: %v\n", err)
+		return
+	}
+
+	fmt.Println("transcript retreived: " + transcriptString)
 }
 
 // getTranscriptionFileFromS3 takes in a session, name of an s3 bucket, and a file in that bucket, and creates it in a local dir
@@ -133,4 +150,38 @@ func receiveMessages(sess *session.Session, queueUrl string) (string, string, er
 	json.Unmarshal([]byte(*resp.Messages[0].Body), &sqsMessage)
 
 	return sqsMessage.Records[0].S3.Bucket.Name, sqsMessage.Records[0].S3.Object.Key, nil
+}
+
+// getTranscriptFromJsonFile takes in a json file name, finds the transcript within, and returns the transcript
+func getTranscriptFromJsonFile(fileName string) (string, error) {
+
+	if !strings.HasPrefix(fileName, "transcripts/") {
+		return "", fmt.Errorf("error: fileName did not begin with transcripts/ as expected...")
+	}
+
+	if strings.HasSuffix(fileName, ".json") {
+		return "", fmt.Errorf("error, non .json file passed in.")
+	}
+
+	fileData, err := os.ReadFile("./transcripts/" + fileName)
+	if err != nil {
+		return "", fmt.Errorf("error reading from file: %s, error: %v\n", fileName, err)
+	}
+
+	var jsonTranscript TranscriptJson
+	err = json.Unmarshal(fileData, &jsonTranscript)
+	if err != nil {
+		return "", fmt.Errorf("error unmarshalling fileData from filename: %s, fileData: %v, err: %v\n", fileName, fileData, err)
+	}
+
+	if len(jsonTranscript.Results.Transcripts) == 0 {
+		return "", fmt.Errorf("error getting transcript from file, no transcript, length of 0... transcript struct: %v", jsonTranscript)
+	}
+
+	if len(jsonTranscript.Results.Transcripts) > 1 {
+		return "", fmt.Errorf("error, unexpected length of json transcripts. len: %d, struct data: %v\n", len(jsonTranscript.Results.Transcripts), jsonTranscript)
+	}
+
+	return jsonTranscript.Results.Transcripts[0].Transcript, nil
+
 }
