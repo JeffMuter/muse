@@ -1,1 +1,750 @@
-{"jobName":"transcription-1740084336","accountId":"056105699299","status":"COMPLETED","results":{"transcripts":[{"transcript":"Congratulations, Wendy all happened here. And some of you may not know, uh, the gentleman to my left, but a very important part of Wendy's history and your family and your company continues to be Mr. Rodney Wasserstrom. So welcome to Wendy and Rodney. Um, we're gonna"}],"items":[{"id":0,"type":"pronunciation","alternatives":[{"confidence":"0.856","content":"Congratulations"}],"start_time":"0.319","end_time":"0.839"},{"id":1,"type":"punctuation","alternatives":[{"confidence":"0.0","content":","}]},{"id":2,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"Wendy"}],"start_time":"0.879","end_time":"1.389"},{"id":3,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"all"}],"start_time":"2.559","end_time":"2.72"},{"id":4,"type":"pronunciation","alternatives":[{"confidence":"0.993","content":"happened"}],"start_time":"2.72","end_time":"2.94"},{"id":5,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"here"}],"start_time":"2.94","end_time":"3.119"},{"id":6,"type":"punctuation","alternatives":[{"confidence":"0.0","content":"."}]},{"id":7,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"And"}],"start_time":"4.909","end_time":"5.26"},{"id":8,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"some"}],"start_time":"5.26","end_time":"5.38"},{"id":9,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"of"}],"start_time":"5.38","end_time":"5.46"},{"id":10,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"you"}],"start_time":"5.46","end_time":"5.659"},{"id":11,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"may"}],"start_time":"5.659","end_time":"5.86"},{"id":12,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"not"}],"start_time":"5.86","end_time":"6.059"},{"id":13,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"know"}],"start_time":"6.059","end_time":"6.289"},{"id":14,"type":"punctuation","alternatives":[{"confidence":"0.0","content":","}]},{"id":15,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"uh"}],"start_time":"6.42","end_time":"6.61"},{"id":16,"type":"punctuation","alternatives":[{"confidence":"0.0","content":","}]},{"id":17,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"the"}],"start_time":"6.619","end_time":"6.71"},{"id":18,"type":"pronunciation","alternatives":[{"confidence":"0.994","content":"gentleman"}],"start_time":"6.71","end_time":"7.139"},{"id":19,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"to"}],"start_time":"7.139","end_time":"7.3"},{"id":20,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"my"}],"start_time":"7.3","end_time":"7.539"},{"id":21,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"left"}],"start_time":"7.539","end_time":"7.769"},{"id":22,"type":"punctuation","alternatives":[{"confidence":"0.0","content":","}]},{"id":23,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"but"}],"start_time":"7.9","end_time":"8.18"},{"id":24,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"a"}],"start_time":"8.18","end_time":"8.42"},{"id":25,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"very"}],"start_time":"8.42","end_time":"8.819"},{"id":26,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"important"}],"start_time":"8.819","end_time":"9.14"},{"id":27,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"part"}],"start_time":"9.14","end_time":"9.329"},{"id":28,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"of"}],"start_time":"9.329","end_time":"9.5"},{"id":29,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"Wendy's"}],"start_time":"9.5","end_time":"10.05"},{"id":30,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"history"}],"start_time":"10.05","end_time":"10.42"},{"id":31,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"and"}],"start_time":"10.42","end_time":"10.659"},{"id":32,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"your"}],"start_time":"10.659","end_time":"10.859"},{"id":33,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"family"}],"start_time":"10.859","end_time":"11.14"},{"id":34,"type":"pronunciation","alternatives":[{"confidence":"0.997","content":"and"}],"start_time":"11.14","end_time":"11.26"},{"id":35,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"your"}],"start_time":"11.26","end_time":"11.42"},{"id":36,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"company"}],"start_time":"11.42","end_time":"12.029"},{"id":37,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"continues"}],"start_time":"12.029","end_time":"12.38"},{"id":38,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"to"}],"start_time":"12.38","end_time":"12.5"},{"id":39,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"be"}],"start_time":"12.5","end_time":"12.81"},{"id":40,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"Mr"}],"start_time":"13.1","end_time":"13.449"},{"id":41,"type":"punctuation","alternatives":[{"confidence":"0.0","content":"."}]},{"id":42,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"Rodney"}],"start_time":"13.619","end_time":"14.1"},{"id":43,"type":"pronunciation","alternatives":[{"confidence":"0.985","content":"Wasserstrom"}],"start_time":"14.1","end_time":"14.779"},{"id":44,"type":"punctuation","alternatives":[{"confidence":"0.0","content":"."}]},{"id":45,"type":"pronunciation","alternatives":[{"confidence":"0.882","content":"So"}],"start_time":"14.859","end_time":"15.02"},{"id":46,"type":"pronunciation","alternatives":[{"confidence":"0.999","content":"welcome"}],"start_time":"15.02","end_time":"15.569"},{"id":47,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"to"}],"start_time":"15.569","end_time":"15.97"},{"id":48,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"Wendy"}],"start_time":"16.7","end_time":"17.37"},{"id":49,"type":"pronunciation","alternatives":[{"confidence":"0.998","content":"and"}],"start_time":"17.62","end_time":"17.78"},{"id":50,"type":"pronunciation","alternatives":[{"confidence":"0.995","content":"Rodney"}],"start_time":"17.78","end_time":"18.379"},{"id":51,"type":"punctuation","alternatives":[{"confidence":"0.0","content":"."}]},{"id":52,"type":"pronunciation","alternatives":[{"confidence":"0.996","content":"Um"}],"start_time":"19.77","end_time":"20.069"},{"id":53,"type":"punctuation","alternatives":[{"confidence":"0.0","content":","}]},{"id":54,"type":"pronunciation","alternatives":[{"confidence":"0.995","content":"we're"}],"start_time":"20.139","end_time":"20.299"},{"id":55,"type":"pronunciation","alternatives":[{"confidence":"0.997","content":"gonna"}],"start_time":"20.299","end_time":"20.489"}],"audio_segments":[{"id":0,"transcript":"Congratulations, Wendy all happened here.","start_time":"0.0","end_time":"3.22","items":[0,1,2,3,4,5,6]},{"id":1,"transcript":"And some of you may not know, uh, the gentleman to my left, but a very important part of Wendy's history and your family and your company continues to be Mr. Rodney Wasserstrom. So welcome to Wendy and Rodney.","start_time":"4.9","end_time":"18.51","items":[7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51]},{"id":2,"transcript":"Um, we're gonna","start_time":"19.54","end_time":"20.52","items":[52,53,54,55]}]}}
+{
+  "jobName": "transcription-1740084336",
+  "accountId": "056105699299",
+  "status": "COMPLETED",
+  "results": {
+    "transcripts": [
+      {
+        "transcript": "Congratulations, Wendy all happened here. And some of you may not know, uh, the gentleman to my left, but a very important part of Wendy's history and your family and your company continues to be Mr. Rodney Wasserstrom. So welcome to Wendy and Rodney. Um, we're gonna"
+      }
+    ],
+    "items": [
+      {
+        "id": 0,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.856",
+            "content": "Congratulations"
+          }
+        ],
+        "start_time": "0.319",
+        "end_time": "0.839"
+      },
+      {
+        "id": 1,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": ","
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "Wendy"
+          }
+        ],
+        "start_time": "0.879",
+        "end_time": "1.389"
+      },
+      {
+        "id": 3,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "all"
+          }
+        ],
+        "start_time": "2.559",
+        "end_time": "2.72"
+      },
+      {
+        "id": 4,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.993",
+            "content": "happened"
+          }
+        ],
+        "start_time": "2.72",
+        "end_time": "2.94"
+      },
+      {
+        "id": 5,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "here"
+          }
+        ],
+        "start_time": "2.94",
+        "end_time": "3.119"
+      },
+      {
+        "id": 6,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": "."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "And"
+          }
+        ],
+        "start_time": "4.909",
+        "end_time": "5.26"
+      },
+      {
+        "id": 8,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "some"
+          }
+        ],
+        "start_time": "5.26",
+        "end_time": "5.38"
+      },
+      {
+        "id": 9,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "of"
+          }
+        ],
+        "start_time": "5.38",
+        "end_time": "5.46"
+      },
+      {
+        "id": 10,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "you"
+          }
+        ],
+        "start_time": "5.46",
+        "end_time": "5.659"
+      },
+      {
+        "id": 11,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "may"
+          }
+        ],
+        "start_time": "5.659",
+        "end_time": "5.86"
+      },
+      {
+        "id": 12,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "not"
+          }
+        ],
+        "start_time": "5.86",
+        "end_time": "6.059"
+      },
+      {
+        "id": 13,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "know"
+          }
+        ],
+        "start_time": "6.059",
+        "end_time": "6.289"
+      },
+      {
+        "id": 14,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": ","
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "uh"
+          }
+        ],
+        "start_time": "6.42",
+        "end_time": "6.61"
+      },
+      {
+        "id": 16,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": ","
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "the"
+          }
+        ],
+        "start_time": "6.619",
+        "end_time": "6.71"
+      },
+      {
+        "id": 18,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.994",
+            "content": "gentleman"
+          }
+        ],
+        "start_time": "6.71",
+        "end_time": "7.139"
+      },
+      {
+        "id": 19,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "to"
+          }
+        ],
+        "start_time": "7.139",
+        "end_time": "7.3"
+      },
+      {
+        "id": 20,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "my"
+          }
+        ],
+        "start_time": "7.3",
+        "end_time": "7.539"
+      },
+      {
+        "id": 21,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "left"
+          }
+        ],
+        "start_time": "7.539",
+        "end_time": "7.769"
+      },
+      {
+        "id": 22,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": ","
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "but"
+          }
+        ],
+        "start_time": "7.9",
+        "end_time": "8.18"
+      },
+      {
+        "id": 24,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "a"
+          }
+        ],
+        "start_time": "8.18",
+        "end_time": "8.42"
+      },
+      {
+        "id": 25,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "very"
+          }
+        ],
+        "start_time": "8.42",
+        "end_time": "8.819"
+      },
+      {
+        "id": 26,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "important"
+          }
+        ],
+        "start_time": "8.819",
+        "end_time": "9.14"
+      },
+      {
+        "id": 27,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "part"
+          }
+        ],
+        "start_time": "9.14",
+        "end_time": "9.329"
+      },
+      {
+        "id": 28,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "of"
+          }
+        ],
+        "start_time": "9.329",
+        "end_time": "9.5"
+      },
+      {
+        "id": 29,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "Wendy's"
+          }
+        ],
+        "start_time": "9.5",
+        "end_time": "10.05"
+      },
+      {
+        "id": 30,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "history"
+          }
+        ],
+        "start_time": "10.05",
+        "end_time": "10.42"
+      },
+      {
+        "id": 31,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "and"
+          }
+        ],
+        "start_time": "10.42",
+        "end_time": "10.659"
+      },
+      {
+        "id": 32,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "your"
+          }
+        ],
+        "start_time": "10.659",
+        "end_time": "10.859"
+      },
+      {
+        "id": 33,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "family"
+          }
+        ],
+        "start_time": "10.859",
+        "end_time": "11.14"
+      },
+      {
+        "id": 34,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.997",
+            "content": "and"
+          }
+        ],
+        "start_time": "11.14",
+        "end_time": "11.26"
+      },
+      {
+        "id": 35,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "your"
+          }
+        ],
+        "start_time": "11.26",
+        "end_time": "11.42"
+      },
+      {
+        "id": 36,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "company"
+          }
+        ],
+        "start_time": "11.42",
+        "end_time": "12.029"
+      },
+      {
+        "id": 37,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "continues"
+          }
+        ],
+        "start_time": "12.029",
+        "end_time": "12.38"
+      },
+      {
+        "id": 38,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "to"
+          }
+        ],
+        "start_time": "12.38",
+        "end_time": "12.5"
+      },
+      {
+        "id": 39,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "be"
+          }
+        ],
+        "start_time": "12.5",
+        "end_time": "12.81"
+      },
+      {
+        "id": 40,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "Mr"
+          }
+        ],
+        "start_time": "13.1",
+        "end_time": "13.449"
+      },
+      {
+        "id": 41,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": "."
+          }
+        ]
+      },
+      {
+        "id": 42,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "Rodney"
+          }
+        ],
+        "start_time": "13.619",
+        "end_time": "14.1"
+      },
+      {
+        "id": 43,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.985",
+            "content": "Wasserstrom"
+          }
+        ],
+        "start_time": "14.1",
+        "end_time": "14.779"
+      },
+      {
+        "id": 44,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": "."
+          }
+        ]
+      },
+      {
+        "id": 45,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.882",
+            "content": "So"
+          }
+        ],
+        "start_time": "14.859",
+        "end_time": "15.02"
+      },
+      {
+        "id": 46,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.999",
+            "content": "welcome"
+          }
+        ],
+        "start_time": "15.02",
+        "end_time": "15.569"
+      },
+      {
+        "id": 47,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "to"
+          }
+        ],
+        "start_time": "15.569",
+        "end_time": "15.97"
+      },
+      {
+        "id": 48,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "Wendy"
+          }
+        ],
+        "start_time": "16.7",
+        "end_time": "17.37"
+      },
+      {
+        "id": 49,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.998",
+            "content": "and"
+          }
+        ],
+        "start_time": "17.62",
+        "end_time": "17.78"
+      },
+      {
+        "id": 50,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.995",
+            "content": "Rodney"
+          }
+        ],
+        "start_time": "17.78",
+        "end_time": "18.379"
+      },
+      {
+        "id": 51,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": "."
+          }
+        ]
+      },
+      {
+        "id": 52,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.996",
+            "content": "Um"
+          }
+        ],
+        "start_time": "19.77",
+        "end_time": "20.069"
+      },
+      {
+        "id": 53,
+        "type": "punctuation",
+        "alternatives": [
+          {
+            "confidence": "0.0",
+            "content": ","
+          }
+        ]
+      },
+      {
+        "id": 54,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.995",
+            "content": "we're"
+          }
+        ],
+        "start_time": "20.139",
+        "end_time": "20.299"
+      },
+      {
+        "id": 55,
+        "type": "pronunciation",
+        "alternatives": [
+          {
+            "confidence": "0.997",
+            "content": "gonna"
+          }
+        ],
+        "start_time": "20.299",
+        "end_time": "20.489"
+      }
+    ],
+    "audio_segments": [
+      {
+        "id": 0,
+        "transcript": "Congratulations, Wendy all happened here.",
+        "start_time": "0.0",
+        "end_time": "3.22",
+        "items": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      {
+        "id": 1,
+        "transcript": "And some of you may not know, uh, the gentleman to my left, but a very important part of Wendy's history and your family and your company continues to be Mr. Rodney Wasserstrom. So welcome to Wendy and Rodney.",
+        "start_time": "4.9",
+        "end_time": "18.51",
+        "items": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51
+        ]
+      },
+      {
+        "id": 2,
+        "transcript": "Um, we're gonna",
+        "start_time": "19.54",
+        "end_time": "20.52",
+        "items": [
+          52,
+          53,
+          54,
+          55
+        ]
+      }
+    ]
+  }
+}
