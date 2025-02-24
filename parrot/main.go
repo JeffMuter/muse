@@ -53,6 +53,7 @@ func main() {
 		fmt.Printf("no message read, or error: %v", err)
 		return
 	}
+
 	fmt.Printf("message received. bucketname: %s. fileName: %s.\n", bucketName, fileName)
 
 	err = getTranscriptionFileFromS3(sess, bucketName, fileName)
@@ -60,6 +61,7 @@ func main() {
 		fmt.Printf("getting file from s3 failed: %v\n", err)
 		return
 	}
+
 	fmt.Println("process finished")
 
 	transcriptString, err := getTranscriptFromJsonFile(fileName)
@@ -159,11 +161,11 @@ func getTranscriptFromJsonFile(fileName string) (string, error) {
 		return "", fmt.Errorf("error: fileName did not begin with transcripts/ as expected...")
 	}
 
-	if strings.HasSuffix(fileName, ".json") {
+	if !strings.HasSuffix(fileName, ".json") {
 		return "", fmt.Errorf("error, non .json file passed in.")
 	}
 
-	fileData, err := os.ReadFile("./transcripts/" + fileName)
+	fileData, err := os.ReadFile("./" + fileName)
 	if err != nil {
 		return "", fmt.Errorf("error reading from file: %s, error: %v\n", fileName, err)
 	}
