@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -26,6 +27,24 @@ type TranscriptJson struct {
 			Transcript string `json:"transcript"`
 		} `json:"transcripts"`
 	} `json:"results"`
+}
+
+type ClaudeTranscriptSummary struct {
+	Summary string
+	Topics  []TranscriptTopicDetails
+	Alerts  []TranscriptAlertDetails
+}
+
+type TranscriptTopicDetails struct {
+	Name      string
+	Timestamp time.Time
+	Summary   string
+}
+
+type TranscriptAlertDetails struct {
+	Type     string
+	Summary  string
+	Severity string
 }
 
 // currently runs once TODO to do this where a sleep of xseconds waits to check for a new file, then run again with new transcript
@@ -79,7 +98,24 @@ func main() {
 	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 	anthropicClient := anthropic.NewClient(anthropicKey)
 
-	prompt := "please summarize this conversation into one paragraph. And tell me if anyone mentions anything about software developers, or Jeff Muter: " + transcriptString
+	prompt := `Summarize the following transcript by returning a JSON object in this format with the following fields filled out: {
+  "summary": "Overall conversation summary",
+  "topics": [
+    {
+      "name": "topic_name",
+      "summary": "summary of this topic discussion"
+    }
+  ],
+  "alerts": [
+    {
+      "type": "crime|sensitive_topic|Wasserstrom",
+      "quote": "the exact substring that triggered the alert",
+      "summary": "details about the alert",
+      "severity": "high|medium|low",
+      "mentioned_at": "how far into the transcript",
+    }
+  ]
+	} Here is the transcript:` + transcriptString
 
 	claudeResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
 		Model: anthropic.ModelClaude3Haiku20240307,
