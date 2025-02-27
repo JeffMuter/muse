@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/joho/godotenv"
+	"github.com/liushuangls/go-anthropic/v2"
 )
 
 type TranscriptJson struct {
@@ -25,6 +28,7 @@ type TranscriptJson struct {
 	} `json:"results"`
 }
 
+// currently runs once TODO to do this where a sleep of xseconds waits to check for a new file, then run again with new transcript
 func main() {
 	// Load .env file
 	err := godotenv.Load()
@@ -70,7 +74,31 @@ func main() {
 		return
 	}
 
-	fmt.Println("transcript retreived: " + transcriptString)
+	fmt.Println("transcript retreived successfully")
+
+	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
+	anthropicClient := anthropic.NewClient(anthropicKey)
+
+	prompt := "please summarize this conversation into one paragraph. And tell me if anyone mentions anything about software developers, or Jeff Muter: " + transcriptString
+
+	claudeResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
+		Model: anthropic.ModelClaude3Haiku20240307,
+		Messages: []anthropic.Message{
+			anthropic.NewUserTextMessage(prompt),
+		},
+		MaxTokens: 1000,
+	})
+	if err != nil {
+		var e *anthropic.APIError
+		if errors.As(err, &e) {
+			fmt.Printf("Messages error, type: %s, message: %s", e.Type, e.Message)
+		} else {
+			fmt.Printf("Messages error: %v\n", err)
+		}
+		return
+	}
+
+	fmt.Printf("response from claude:\n %s\n", claudeResponse.Content[0].GetText())
 }
 
 // getTranscriptionFileFromS3 takes in a session, name of an s3 bucket, and a file in that bucket, and creates it in a local dir
