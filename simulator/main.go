@@ -2,14 +2,31 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"syscall"
 )
 
 func main() {
+
+	var numOfStreams = 10
+
+	for i := 0; i < numOfStreams; i++ {
+		go streamFiles(i)
+	}
+
+	// Wait for a signal to terminate all streams
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	fmt.Println("Received shutdown signal, terminating all streams...")
+}
+
+func streamFiles(numOfStreams int) error {
+
 	cmd := exec.Command(
 		"ffmpeg",
 		"-re",
@@ -18,18 +35,17 @@ func main() {
 		"-c", "copy",
 		"-f", "rtsp",
 		"-rtsp_transport", "tcp",
-		"rtsp://pelican:8554/stream",
+		"rtsp://pelican:8554/stream/camera"+strconv.Itoa(numOfStreams),
 	)
 
 	cmd.Stderr = os.Stderr
 
 	// start the stream
 	if err := cmd.Start(); err != nil {
-		log.Fatal("Failed to start stream:", err)
+		return fmt.Errorf("Failed to start stream: %v\n", err)
 	}
 
-	fmt.Println("Stream started at rtsp://pelican:8554/stream")
-	// Handle graceful shutdown
+	// graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -38,8 +54,8 @@ func main() {
 
 	// kill the FFmpeg process gracefully
 	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
-		log.Printf("Failed to kill FFmpeg process: %v", err)
+		return fmt.Errorf("Failed to kill FFmpeg process: %v\n", err)
 	}
 
-	fmt.Println("\nStream stopped")
+	return nil
 }
