@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -71,70 +72,71 @@ func main() {
 		},
 	}))
 
-	bucketName, fileName, err := receiveMessages(sess, queueUrl)
+	fileBucketDetailMap, err := receiveMessages(sess, queueUrl)
 	if err != nil {
 		fmt.Printf("no message read, or error: %v", err)
 		return
 	}
 
-	fmt.Printf("message received. bucketname: %s. fileName: %s.\n", bucketName, fileName)
-
-	err = getTranscriptionFileFromS3(sess, bucketName, fileName)
-	if err != nil {
-		fmt.Printf("getting file from s3 failed: %v\n", err)
-		return
-	}
-
-	fmt.Println("process finished")
-
-	transcriptString, err := getTranscriptFromJsonFile(fileName)
-	if err != nil {
-		fmt.Printf("error getting transcript from json file: %v\n", err)
-		return
-	}
-
-	fmt.Println("transcript retreived successfully")
-
-	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
-	anthropicClient := anthropic.NewClient(anthropicKey)
-
-	prompt := `Summarize the following transcript by returning a JSON object in this format with the following fields filled out: {
-  "summary": "Overall conversation summary",
-  "topics": [
-    {
-      "name": "topic_name",
-      "summary": "summary of this topic discussion"
-    }
-  ],
-  "alerts": [
-    {
-      "type": "crime|sensitive_topic|Wasserstrom",
-      "quote": "the exact substring that triggered the alert",
-      "summary": "details about the alert",
-      "severity": "high|medium|low",
-      "mentioned_at": "how far into the transcript",
-    }
-  ]
-	} Here is the transcript:` + transcriptString
-
-	claudeResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
-		Model: anthropic.ModelClaude3Haiku20240307,
-		Messages: []anthropic.Message{
-			anthropic.NewUserTextMessage(prompt),
-		},
-		MaxTokens: 1000,
-	})
-	if err != nil {
-		var e *anthropic.APIError
-		if errors.As(err, &e) {
-			fmt.Printf("Messages error, type: %s, message: %s", e.Type, e.Message)
-		} else {
-			fmt.Printf("Messages error: %v\n", err)
+	for _, thisFile := range fileBucketDetailMap {
+		err = getTranscriptionFileFromS3(sess, bucketName, fileName)
+		if err != nil {
+			fmt.Printf("getting file from s3 failed: %v\n", err)
+			return
 		}
-		return
+
+		fmt.Println("process finished")
+
+		transcriptString, err := getTranscriptFromJsonFile(fileName)
+		if err != nil {
+			fmt.Printf("error getting transcript from json file: %v\n", err)
+			return
+		}
+
+		fmt.Println("transcript retreived successfully")
+
+		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
+		anthropicClient := anthropic.NewClient(anthropicKey)
+
+		prompt := `
+	Summarize the following transcript by returning a JSON object in this format with the following fields filled out: {
+		"summary": "Overall conversation summary",
+		"topics": [
+			{
+				"name": "topic_name",
+				"summary": "summary of this topic discussion"
+			}
+		],
+		"alerts": [
+			{
+				"type": "crime|sensitive_topic",
+				"quote": "the exact substring that triggered the alert",
+				"summary": "details about the alert",
+				"severity": "high|medium|low",
+				"mentioned_at": "how far into the transcript",
+			}
+		]
+	} 
+	Here is the transcript:` + transcriptString
+
+		claudeResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
+			Model: anthropic.ModelClaude3Haiku20240307,
+			Messages: []anthropic.Message{
+				anthropic.NewUserTextMessage(prompt),
+			},
+			MaxTokens: 1000,
+		})
+		if err != nil {
+			var e *anthropic.APIError
+			if errors.As(err, &e) {
+				fmt.Printf("Messages error, type: %s, message: %s", e.Type, e.Message)
+			} else {
+				fmt.Printf("Messages error: %v\n", err)
+			}
+			return
+		}
 	}
 
-	fmt.Printf("response from claude:\n %s\n", claudeResponse.Content[0].GetText())
 }
 
 // getTranscriptionFileFromS3 takes in a session, name of an s3 bucket, and a file in that bucket, and creates it in a local dir
@@ -166,9 +168,10 @@ func getTranscriptionFileFromS3(sess *session.Session, bucketName, fileName stri
 	return nil
 }
 
-// TODO: better err handling
-// receiveMessages takes in queue url, and if a message exists, returns the bucket name, file name of the desired file.
-func receiveMessages(sess *session.Session, queueUrl string) (string, string, error) {
+// receiveMessages takes in queue url, and if a message exists, returns the bucket name, file name of the desired file in a map.
+func receiveMessages(sess *session.Session, queueUrl string) (map[string]string, error) {
+	mapOfFileDetails := make(map[string]string)
+
 	var sqsMessage struct {
 		Records []struct {
 			S3 struct {
@@ -186,36 +189,41 @@ func receiveMessages(sess *session.Session, queueUrl string) (string, string, er
 
 	resp, err := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(queueUrl),
-		MaxNumberOfMessages: aws.Int64(1),
+		MaxNumberOfMessages: aws.Int64(10),
 		WaitTimeSeconds:     aws.Int64(2),
 	})
 	if err != nil {
 		fmt.Println("Error receiving messages:", err)
-		return "", "", err
+		return mapOfFileDetails, err
 	}
 	if len(resp.Messages) == 0 {
 		fmt.Println("receiving messages failed, no messages.")
-		return "", "", fmt.Errorf("receiving messages failed, no messages.\n")
+		return mapOfFileDetails, fmt.Errorf("receiving messages failed, no messages.\n")
 	}
 
-	// Process the message
-	fmt.Printf("Processing message: %s\n", aws.StringValue(resp.Messages[0].Body))
+	fmt.Println("length of messages: " + strconv.Itoa(len(resp.Messages)))
 
-	// Delete the message
-	_, delErr := sqsClient.DeleteMessage(&sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(queueUrl),
-		ReceiptHandle: resp.Messages[0].ReceiptHandle,
-	})
-	if delErr != nil {
-		fmt.Println("Delete Error", delErr)
-		return "", "", err
+	// Process the messages
+	fmt.Printf("Processing messages: %s\n", aws.StringValue(resp.Messages[0].Body))
+
+	for _, message := range resp.Messages {
+		// Delete the message
+		_, delErr := sqsClient.DeleteMessage(&sqs.DeleteMessageInput{
+			QueueUrl:      aws.String(queueUrl),
+			ReceiptHandle: message.ReceiptHandle,
+		})
+		if delErr != nil {
+			fmt.Println("Delete Error", delErr)
+			return mapOfFileDetails, err
+		}
+
+		// Parse your SQS message into this struct
+		json.Unmarshal([]byte(*message.Body), &sqsMessage)
+
+		mapOfFileDetails[sqsMessage.Records[0].S3.Object.Key] = sqsMessage.Records[0].S3.Bucket.Name
 	}
-	fmt.Println("Message Deleted")
 
-	// Parse your SQS message into this struct
-	json.Unmarshal([]byte(*resp.Messages[0].Body), &sqsMessage)
-
-	return sqsMessage.Records[0].S3.Bucket.Name, sqsMessage.Records[0].S3.Object.Key, nil
+	return mapOfFileDetails, nil
 }
 
 // getTranscriptFromJsonFile takes in a json file name, finds the transcript within, and returns the transcript
