@@ -25,7 +25,7 @@ func main() {
 	fmt.Println("Received shutdown signal, terminating all streams...")
 }
 
-func streamFiles(numOfStreams int) error {
+func streamFiles(deviceNumber int) error {
 
 	cmd := exec.Command(
 		"ffmpeg",
@@ -35,7 +35,7 @@ func streamFiles(numOfStreams int) error {
 		"-c", "copy",
 		"-f", "rtsp",
 		"-rtsp_transport", "tcp",
-		"rtsp://pelican:8554/stream/camera"+strconv.Itoa(numOfStreams),
+		"rtsp://pelican:8554/stream/camera"+strconv.Itoa(deviceNumber),
 	)
 
 	cmd.Stderr = os.Stderr

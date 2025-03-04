@@ -325,12 +325,12 @@ func (sm *StreamManager) processStream(path string, cancelChan chan bool) {
 			}
 
 			// Upload in a separate goroutine so it doesn't block the next recording
-			go func(fileName string) {
-				err := cloud.UploadFileToS3(fileName)
+			go func(outputFileName string) {
+				err := cloud.UploadFileToS3(outputFileName)
 				if err != nil {
-					fmt.Printf("Error uploading %s to S3: %v", fileName, err)
+					fmt.Printf("Error uploading %s to S3: %v", outputFileName, err)
 				} else {
-					fmt.Printf("Successfully uploaded %s to S3", fileName)
+					fmt.Printf("Successfully uploaded %s to S3", outputFileName)
 				}
 			}(outputFileName)
 		}
