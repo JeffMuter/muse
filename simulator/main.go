@@ -14,7 +14,7 @@ func main() {
 	var numOfStreams = 10
 
 	for i := 0; i < numOfStreams; i++ {
-		go streamFiles(i)
+		go streamFiles("camera", i) // TODO: dont hardcode camera, may be other device types in prod
 	}
 
 	// Wait for a signal to terminate all streams
@@ -25,7 +25,7 @@ func main() {
 	fmt.Println("Received shutdown signal, terminating all streams...")
 }
 
-func streamFiles(deviceNumber int) error {
+func streamFiles(deviceType string, deviceNumber int) error {
 
 	cmd := exec.Command(
 		"ffmpeg",
@@ -35,7 +35,7 @@ func streamFiles(deviceNumber int) error {
 		"-c", "copy",
 		"-f", "rtsp",
 		"-rtsp_transport", "tcp",
-		"rtsp://pelican:8554/stream/camera"+strconv.Itoa(deviceNumber),
+		"rtsp://pelican:8554/stream/"+deviceType+strconv.Itoa(deviceNumber),
 	)
 
 	cmd.Stderr = os.Stderr
