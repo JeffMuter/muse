@@ -12,6 +12,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type alertData struct {
+	alertTitle          string
+	deviceType          string
+	deviceName          string
+	eventTime           string
+	eventDate           string
+	deviceLocation      string
+	conversationSummary string
+	alertQuote          string
+	fileUrl             string
+}
+
 func main() {
 	// Load .env file
 	err := godotenv.Load()
@@ -37,11 +49,11 @@ func main() {
 	svc := ses.New(sess)
 
 	// 3. Prepare email content
-	sender := "muterjeffery@gmail.com"    // Must be verified in SES
-	recipient := "muterjeffery@gmail.com" // Must be verified if in sandbox mode
+	recipient := "jefferymuter@yahoo.com" // Must be verified in SES
+	sender := "muterjeffery@gmail.com"    // Must be verified if in sandbox mode
 	subject := "Hello from AWS SES (Go)"
 	textBody := "This is a test email sent using AWS SES from Go."
-	htmlBody := "<h1>Hello!</h1><p>This is a test email sent using <strong>AWS SES</strong> from Go.</p>"
+	htmlBody := "<h1>Security alert!</h1><br><h2>" + alertTitle + "</h2><br><p>This alert is due to Muse discovering conversation related to," + alertType + ", in audio from " + deviceName + ".</p><br><h3>Device Details:</h3><br><p>" + deviceDetails + "</p>"
 
 	// 4. Specify email parameters
 	input := &ses.SendEmailInput{
