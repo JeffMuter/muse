@@ -25,6 +25,8 @@ type alertData struct {
 }
 
 func main() {
+	var alertData alertData
+
 	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
@@ -53,7 +55,26 @@ func main() {
 	sender := "muterjeffery@gmail.com"    // Must be verified if in sandbox mode
 	subject := "Hello from AWS SES (Go)"
 	textBody := "This is a test email sent using AWS SES from Go."
-	htmlBody := "<h1>Security alert!</h1><br><h2>" + alertTitle + "</h2><br><p>This alert is due to Muse discovering conversation related to," + alertType + ", in audio from " + deviceName + ".</p><br><h3>Device Details:</h3><br><p>" + deviceDetails + "</p>"
+
+	htmlBody := `<h1>Muse: ` + alertData.alertTitle + ` Detected</h1>
+		<br>
+		<p>Muse has discovered an ` + alertData.alertTitle + ` from: ` + alertData.deviceType + ` ` + alertData.deviceName + `</p>
+		<br>
+		<h3>Alert triggered by quote:</h3>
+		<br> 
+		` + alertData.alertQuote + `
+		<br>
+		<h3>Conversation Summary:</h3>
+		<br>
+		` + alertData.conversationSummary + `
+		<br>
+		<h2>Estimated Event Details:</h3>
+		<br>
+		<h3>Time: ~` + alertData.eventTime + `</h3>
+		<br>
+		<h3>Date: ` + alertData.eventDate + `</h3>
+		<br>
+		<h3>Link to file ` + alertData.fileUrl + `<br>`
 
 	// 4. Specify email parameters
 	input := &ses.SendEmailInput{
