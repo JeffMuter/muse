@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package dataservice;
+option go_package = "github.com/jeffmuter/muse/proto";
+
+// The Parrot service definition
+service ParrotService {
+  rpc SendAlertData (AlertDataRequest) returns (AlertDataResponse) {}
+}
+
+// The request message containing the data
+message AlertDataRequest {
+	string alertTitle          = 1;
+	string deviceType          = 2;
+	string deviceName          = 3;
+	string eventTime           = 4;
+	string eventDate           = 5;
+	string deviceLocation      = 6;
+	string conversationSummary = 7;
+	string alertQuote          = 8;
+	string fileUrl             = 9;
+}
+
+// The response message
+message AlertDataResponse {
+	bool success = 1;
+	string message = 2;
+}

@@ -22,6 +22,18 @@ import (
 	"github.com/liushuangls/go-anthropic/v2"
 )
 
+type alertData struct {
+	alertTitle          string
+	deviceType          string
+	deviceName          string
+	eventTime           string
+	eventDate           string
+	deviceLocation      string
+	conversationSummary string
+	alertQuote          string
+	fileUrl             string
+}
+
 type TranscriptJson struct {
 	Results struct {
 		Transcripts []struct {
@@ -78,7 +90,7 @@ func main() {
 		return
 	}
 
-	for _, thisFile := range fileBucketDetailMap {
+	for bucketName, fileName := range fileBucketDetailMap {
 		err = getTranscriptionFileFromS3(sess, bucketName, fileName)
 		if err != nil {
 			fmt.Printf("getting file from s3 failed: %v\n", err)
