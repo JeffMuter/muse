@@ -36,7 +36,7 @@ type rpcServer struct {
 	alertChan chan alertData
 }
 
-func (rpcS *rpcServer) SendPigeonData(ctx context.Context, req *pb.AlertDataRequest) (*pb.AlertDataResponse, error) {
+func (rpcS *rpcServer) SendAlertData(ctx context.Context, req *pb.AlertDataRequest) (*pb.AlertDataResponse, error) {
 	alert := alertData{
 		alertTitle:          req.AlertTitle,
 		deviceType:          req.DeviceType,

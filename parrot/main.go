@@ -116,7 +116,7 @@ func main() {
 		return
 	}
 
-	for bucketName, fileName := range fileBucketDetailMap {
+	for fileName, bucketName := range fileBucketDetailMap {
 		err = getTranscriptionFileFromS3(sess, bucketName, fileName)
 		if err != nil {
 			fmt.Printf("getting file from s3 failed: %v\n", err)
@@ -156,8 +156,8 @@ func main() {
 		]
 	} 
 	Here is the transcript:` + transcriptString
-
-		claudeResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
+		// set to anthropic response and use it for something.
+		_, err = anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
 			Model: anthropic.ModelClaude3Haiku20240307,
 			Messages: []anthropic.Message{
 				anthropic.NewUserTextMessage(prompt),
@@ -173,8 +173,6 @@ func main() {
 			}
 			return
 		}
-
-		fmt.Printf("printing this to stop error %v\n", claudeResponse)
 
 		// Create request from our data
 		req := &pb.AlertDataRequest{

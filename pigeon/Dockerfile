@@ -9,6 +9,7 @@ RUN apk add --no-cache ffmpeg
 WORKDIR /main
 
 # Copy go mod files separately for better caching
+COPY .. /muse
 COPY go.mod go.sum ./
 RUN go mod download
 
