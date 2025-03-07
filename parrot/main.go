@@ -18,8 +18,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	pb "github.com/jeffmuter/muse/proto"
 	"github.com/joho/godotenv"
 	"github.com/liushuangls/go-anthropic/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type alertData struct {
@@ -62,8 +65,31 @@ type TranscriptAlertDetails struct {
 
 // currently runs once TODO to do this where a sleep of xseconds waits to check for a new file, then run again with new transcript
 func main() {
+	// create dummy alert data.
+	alertData := alertData{
+		alertTitle:          "pizza rolls detected",
+		deviceType:          "camera",
+		deviceName:          "camera213",
+		eventTime:           "02:13am",
+		eventDate:           "01/02/2025",
+		deviceLocation:      "London",
+		conversationSummary: "this is the conversation summary",
+		alertQuote:          "this is a quote",
+		fileUrl:             "pretendthisisafileUrl",
+	}
+
+	// Set up a connection to pigeon service
+	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
+	}
+	defer conn.Close()
+
+	// Create gRPC client
+	client := pb.NewParrotServiceClient(conn)
+
 	// Load .env file
-	err := godotenv.Load()
+	err = godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -146,6 +172,29 @@ func main() {
 				fmt.Printf("Messages error: %v\n", err)
 			}
 			return
+		}
+
+		fmt.Printf("printing this to stop error %v\n", claudeResponse)
+
+		// Create request from our data
+		req := &pb.AlertDataRequest{
+			AlertTitle:          alertData.alertTitle,
+			DeviceType:          alertData.deviceType,
+			DeviceName:          alertData.deviceName,
+			EventTime:           alertData.eventTime,
+			EventDate:           alertData.eventDate,
+			DeviceLocation:      alertData.deviceLocation,
+			ConversationSummary: alertData.conversationSummary,
+			AlertQuote:          alertData.alertQuote,
+			FileUrl:             alertData.fileUrl,
+		}
+
+		// Send the request
+		resp, err := client.SendAlertData(context.Background(), req)
+		if err != nil {
+			log.Printf("Failed to send data: %v", err)
+		} else {
+			log.Printf("Response from service1: %s", resp.Message)
 		}
 	}
 
