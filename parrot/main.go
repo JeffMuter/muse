@@ -46,9 +46,20 @@ type TranscriptJson struct {
 }
 
 type ClaudeTranscriptSummary struct {
-	Summary string
-	Topics  []TranscriptTopicDetails
-	Alerts  []TranscriptAlertDetails
+	TransctiptionSummary string  `json:"transcriptionSummary"`
+	Topics               []Topic `json:"transctiptionTopics"`
+	Alerts               []Alert `json:"transcriptionAlerts"`
+}
+
+type Topic struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type Alert struct {
+	Type        string `json:"type"`
+	Desctiption string `json:"descriptions"`
+	Quote       string `json:"quote"`
 }
 
 type TranscriptTopicDetails struct {
@@ -65,18 +76,6 @@ type TranscriptAlertDetails struct {
 
 // currently runs once TODO to do this where a sleep of xseconds waits to check for a new file, then run again with new transcript
 func main() {
-	// create dummy alert data.
-	alertData := alertData{
-		alertTitle:          "pizza rolls detected",
-		deviceType:          "camera",
-		deviceName:          "camera213",
-		eventTime:           "02:13am",
-		eventDate:           "01/02/2025",
-		deviceLocation:      "London",
-		conversationSummary: "this is the conversation summary",
-		alertQuote:          "this is a quote",
-		fileUrl:             "pretendthisisafileUrl",
-	}
 
 	// Set up a connection to pigeon service
 	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -110,91 +109,14 @@ func main() {
 		},
 	}))
 
+	// get messages from sqs, stored in map
 	fileBucketDetailMap, err := receiveMessages(sess, queueUrl)
 	if err != nil {
 		fmt.Printf("no message read, or error: %v", err)
 		return
 	}
 
-	for fileName, bucketName := range fileBucketDetailMap {
-		err = getTranscriptionFileFromS3(sess, bucketName, fileName)
-		if err != nil {
-			fmt.Printf("getting file from s3 failed: %v\n", err)
-			return
-		}
-
-		fmt.Println("process finished")
-
-		transcriptString, err := getTranscriptFromJsonFile(fileName)
-		if err != nil {
-			fmt.Printf("error getting transcript from json file: %v\n", err)
-			return
-		}
-
-		fmt.Println("transcript retreived successfully")
-
-		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
-		anthropicClient := anthropic.NewClient(anthropicKey)
-
-		prompt := `
-	Summarize the following transcript by returning a JSON object in this format with the following fields filled out: {
-		"summary": "Overall conversation summary",
-		"topics": [
-			{
-				"name": "topic_name",
-				"summary": "summary of this topic discussion"
-			}
-		],
-		"alerts": [
-			{
-				"type": "crime|sensitive_topic",
-				"quote": "the exact substring that triggered the alert",
-				"summary": "details about the alert",
-				"severity": "high|medium|low",
-				"mentioned_at": "how far into the transcript",
-			}
-		]
-	} 
-	Here is the transcript:` + transcriptString
-		// set to anthropic response and use it for something.
-		_, err = anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
-			Model: anthropic.ModelClaude3Haiku20240307,
-			Messages: []anthropic.Message{
-				anthropic.NewUserTextMessage(prompt),
-			},
-			MaxTokens: 1000,
-		})
-		if err != nil {
-			var e *anthropic.APIError
-			if errors.As(err, &e) {
-				fmt.Printf("Messages error, type: %s, message: %s", e.Type, e.Message)
-			} else {
-				fmt.Printf("Messages error: %v\n", err)
-			}
-			return
-		}
-
-		// Create request from our data
-		req := &pb.AlertDataRequest{
-			AlertTitle:          alertData.alertTitle,
-			DeviceType:          alertData.deviceType,
-			DeviceName:          alertData.deviceName,
-			EventTime:           alertData.eventTime,
-			EventDate:           alertData.eventDate,
-			DeviceLocation:      alertData.deviceLocation,
-			ConversationSummary: alertData.conversationSummary,
-			AlertQuote:          alertData.alertQuote,
-			FileUrl:             alertData.fileUrl,
-		}
-
-		// Send the request
-		resp, err := client.SendAlertData(context.Background(), req)
-		if err != nil {
-			log.Printf("Failed to send data: %v", err)
-		} else {
-			log.Printf("Response from service1: %s", resp.Message)
-		}
-	}
+	err = sendEmailsFromMessages(fileBucketDetailMap, sess, client)
 
 }
 
@@ -263,8 +185,6 @@ func receiveMessages(sess *session.Session, queueUrl string) (map[string]string,
 	fmt.Println("length of messages: " + strconv.Itoa(len(resp.Messages)))
 
 	// Process the messages
-	fmt.Printf("Processing messages: %s\n", aws.StringValue(resp.Messages[0].Body))
-
 	for _, message := range resp.Messages {
 		// Delete the message
 		_, delErr := sqsClient.DeleteMessage(&sqs.DeleteMessageInput{
@@ -279,6 +199,10 @@ func receiveMessages(sess *session.Session, queueUrl string) (map[string]string,
 		// Parse your SQS message into this struct
 		json.Unmarshal([]byte(*message.Body), &sqsMessage)
 
+		// dont add to map if not a json file. there are other misc file types that are auto added to bucket, like .temp that have caused issues
+		if !strings.HasSuffix(sqsMessage.Records[0].S3.Object.Key, "json") {
+			continue
+		}
 		mapOfFileDetails[sqsMessage.Records[0].S3.Object.Key] = sqsMessage.Records[0].S3.Bucket.Name
 	}
 
@@ -317,4 +241,107 @@ func getTranscriptFromJsonFile(fileName string) (string, error) {
 
 	return jsonTranscript.Results.Transcripts[0].Transcript, nil
 
+}
+
+func sendEmailsFromMessages(messages map[string]string, sess *session.Session, client pb.ParrotServiceClient) error {
+
+	// create dummy alert data.
+	alertData := alertData{
+		alertTitle:          "uninitiated alert title",
+		deviceType:          "",
+		deviceName:          "",
+		eventTime:           "",
+		eventDate:           "",
+		deviceLocation:      "",
+		conversationSummary: "",
+		alertQuote:          "",
+		fileUrl:             "",
+	}
+
+	// loop through messages, sending emails
+	for fileName, bucketName := range messages {
+		if !strings.HasSuffix(fileName, "json") {
+			continue
+		}
+		err := getTranscriptionFileFromS3(sess, bucketName, fileName)
+		if err != nil {
+			return fmt.Errorf("getting file from s3 failed: %v\n", err)
+		}
+
+		transcriptString, err := getTranscriptFromJsonFile(fileName)
+		if err != nil {
+			return fmt.Errorf("error getting transcript from json file: %v\n", err)
+		}
+
+		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
+		anthropicClient := anthropic.NewClient(anthropicKey)
+
+		prompt := `
+	Summarize the following transcript by returning a JSON object in this format with the following fields filled out: {
+		"summary": "Overall conversation summary",
+		"topics": [
+			{
+				"name": "topic_name",
+				"summary": "summary of this topic discussion"
+			}
+		],
+		"alerts": [
+			{
+				"type": "crime|sensitive_topic",
+				"quote": "the exact substring that triggered the alert",
+				"summary": "details about the alert",
+			}
+		]
+	} 
+	Here is the transcript:` + transcriptString
+
+		// set to anthropic response and use it for something.
+		anthropicResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
+			Model: anthropic.ModelClaude3Haiku20240307,
+			Messages: []anthropic.Message{
+				anthropic.NewUserTextMessage(prompt),
+			},
+			MaxTokens: 1000,
+		})
+		if err != nil {
+			var e *anthropic.APIError
+			if errors.As(err, &e) {
+				fmt.Printf("Messages error, type: %s, message: %s", e.Type, e.Message)
+			} else {
+				fmt.Printf("Messages error: %v\n", err)
+			}
+			return e
+		}
+
+		anthropicAlert := *anthropicResponse.Content[0].Text
+
+		// TODO: parse anthropic response into json, then set as request, send to email service.o
+		err = json.Unmarshal([]byte(anthropicAlert), &alertData)
+		if err != nil {
+			return fmt.Errorf("anthropic generated response is not json in intended format: %v\n", err)
+		}
+
+		// Create request from our data
+		req := &pb.AlertDataRequest{
+			AlertTitle:          alertData.alertTitle,
+			DeviceType:          alertData.deviceType,
+			DeviceName:          alertData.deviceName,
+			EventTime:           alertData.eventTime,
+			EventDate:           alertData.eventDate,
+			DeviceLocation:      alertData.deviceLocation,
+			ConversationSummary: alertData.conversationSummary,
+			AlertQuote:          alertData.alertQuote,
+			FileUrl:             alertData.fileUrl,
+		}
+
+		// Send the request
+		resp, err := client.SendAlertData(context.Background(), req)
+		if err != nil {
+			log.Printf("Failed to send data: %v", err)
+		} else {
+			log.Printf("Response from service1: %s", resp.Message)
+		}
+	}
+
+	return nil
 }
