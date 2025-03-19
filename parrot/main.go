@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -260,6 +259,9 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 
 	// loop through messages, sending emails
 	for fileName, bucketName := range messages {
+		transcriptionTool := NewTranscriptSummaryTool()
+		messageContentText := "Please analyze and summarize this transcript: [TRANSCRIPT TEXT HERE]"
+
 		if !strings.HasSuffix(fileName, "json") {
 			continue
 		}
@@ -276,41 +278,36 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 		anthropicClient := anthropic.NewClient(anthropicKey)
 
-		prompt := `
-	Summarize the following transcript by returning a JSON object in this format with the following fields filled out: {
-		"summary": "Overall conversation summary",
-		"topics": [
-			{
-				"name": "topic_name",
-				"summary": "summary of this topic discussion"
-			}
-		],
-		"alerts": [
-			{
-				"type": "crime|sensitive_topic",
-				"quote": "the exact substring that triggered the alert",
-				"summary": "details about the alert",
-			}
-		]
-	} 
-	Here is the transcript:` + transcriptString
-
 		// set to anthropic response and use it for something.
 		anthropicResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
-			Model: anthropic.ModelClaude3Haiku20240307,
+			Model:     anthropic.ModelClaude3Dot5HaikuLatest,
+			MaxTokens: 4096,
 			Messages: []anthropic.Message{
-				anthropic.NewUserTextMessage(prompt),
+				{
+					Role: anthropic.RoleUser,
+					Content: []anthropic.MessageContent{
+						{
+							Type: anthropic.MessagesContentTypeText,
+							Text: &messageContentText,
+						},
+					},
+				},
 			},
-			MaxTokens: 1000,
+			Tools: []anthropic.ToolDefinition{
+				{
+					Name:        transcriptTool["name"].(string),
+					Description: transcriptTool["description"].(string),
+					InputSchema: transcriptTool["input_schema"],
+				},
+			},
+
+			ToolChoice: &anthropic.ToolChoice{
+				Name: transcriptTool["name"].(string),
+			},
 		})
+
 		if err != nil {
-			var e *anthropic.APIError
-			if errors.As(err, &e) {
-				fmt.Printf("Messages error, type: %s, message: %s", e.Type, e.Message)
-			} else {
-				fmt.Printf("Messages error: %v\n", err)
-			}
-			return e
+			log.Fatalf("Error calling Anthropic API: %v", err)
 		}
 
 		anthropicAlert := *anthropicResponse.Content[0].Text
@@ -344,4 +341,63 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 	}
 
 	return nil
+}
+
+// TranscriptSummaryTool creates a tool definition for generating transcript summaries
+func NewTranscriptSummaryTool() map[string]interface{} {
+	return map[string]interface{}{
+		"name":        "transcript_summary",
+		"description": "Generate a comprehensive summary of a transcript with topics and alerts using well-structured JSON.",
+		"input_schema": map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"transcriptionSummary": map[string]interface{}{
+					"type":        "string",
+					"description": "A concise summary of the entire transcript, highlighting the main points and key takeaways.",
+				},
+				"transcriptionTopics": map[string]interface{}{
+					"type": "array",
+					"items": map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"name": map[string]interface{}{
+								"type":        "string",
+								"description": "The name or title of the topic discussed.",
+							},
+							"description": map[string]interface{}{
+								"type":        "string",
+								"description": "A brief description of the topic and what was discussed about it.",
+							},
+						},
+						"required": []string{"name", "description"},
+					},
+					"description": "An array of key topics identified in the transcript.",
+				},
+				"transcriptionAlerts": map[string]interface{}{
+					"type": "array",
+					"items": map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"type": map[string]interface{}{
+								"type":               "string",
+								"enum":               []string{"sensitive", "urgent", "action_required", "follow_up", "custom"},
+								"descri       ption": "The type of alert identified in the transcript.",
+							},
+							"description": map[string]interface{}{
+								"type":        "string",
+								"description": "A description of the alert and why it was flagged.",
+							},
+							"quote": map[string]interface{}{
+								"type":        "string",
+								"description": "A direct quote from the transcript that triggered this alert.",
+							},
+						},
+						"required": []string{"type", "description", "quote"},
+					},
+					"description": "An array of alerts or important items that require attention.",
+				},
+			},
+			"required": []string{"transcriptionSummary", "transcriptionTopics"},
+		},
+	}
 }
