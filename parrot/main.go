@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -24,18 +23,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type alertData struct {
-	alertTitle          string
-	deviceType          string
-	deviceName          string
-	eventTime           string
-	eventDate           string
-	deviceLocation      string
-	conversationSummary string
-	alertQuote          string
-	fileUrl             string
-}
-
 type TranscriptJson struct {
 	Results struct {
 		Transcripts []struct {
@@ -44,33 +31,38 @@ type TranscriptJson struct {
 	} `json:"results"`
 }
 
-type ClaudeTranscriptSummary struct {
-	TransctiptionSummary string  `json:"transcriptionSummary"`
-	Topics               []Topic `json:"transctiptionTopics"`
-	Alerts               []Alert `json:"transcriptionAlerts"`
+type anthropicResponseJson struct {
+	ConversationSummary string `json:"conversationSummary"`
+	Topics              []struct {
+		Topic struct {
+			Name        string `json:"name"`
+			Description string `json:"description"`
+		} `json:"topic"`
+	} `json:"topics"`
+	Alerts []struct {
+		Alert struct {
+			Type        string `json:"type"`
+			Description string `json:"description"`
+			Quote       string `json:"quote"`
+		} `json:"alert"`
+	} `json:"alerts"`
 }
 
-type Topic struct {
+type TranscriptSummaryResponse struct {
+	TranscriptionSummary string               `json:"transcriptionSummary"`
+	TranscriptionTopics  []TranscriptionTopic `json:"transcriptionTopics"`
+	TranscriptionAlerts  []TranscriptionAlert `json:"transcriptionAlerts,omitempty"`
+}
+
+type TranscriptionTopic struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
-type Alert struct {
+type TranscriptionAlert struct {
 	Type        string `json:"type"`
-	Desctiption string `json:"descriptions"`
+	Description string `json:"description"`
 	Quote       string `json:"quote"`
-}
-
-type TranscriptTopicDetails struct {
-	Name      string
-	Timestamp time.Time
-	Summary   string
-}
-
-type TranscriptAlertDetails struct {
-	Type     string
-	Summary  string
-	Severity string
 }
 
 // currently runs once TODO to do this where a sleep of xseconds waits to check for a new file, then run again with new transcript
@@ -121,7 +113,6 @@ func main() {
 
 // getTranscriptionFileFromS3 takes in a session, name of an s3 bucket, and a file in that bucket, and creates it in a local dir
 func getTranscriptionFileFromS3(sess *session.Session, bucketName, fileName string) error {
-	fmt.Println("begin to get file...")
 
 	localPath := filepath.Join("transcripts", filepath.Base(fileName))
 
@@ -134,7 +125,7 @@ func getTranscriptionFileFromS3(sess *session.Session, bucketName, fileName stri
 
 	downloader := s3manager.NewDownloader(sess)
 
-	numBytes, err := downloader.Download(file,
+	_, err = downloader.Download(file,
 		&s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
 			Key:    aws.String(fileName),
@@ -142,8 +133,6 @@ func getTranscriptionFileFromS3(sess *session.Session, bucketName, fileName stri
 	if err != nil {
 		return fmt.Errorf("could not download file from s3 bucket: %v\n", err)
 	}
-
-	fmt.Println("Downloaded", file.Name(), numBytes, "bytes")
 
 	return nil
 }
@@ -244,23 +233,10 @@ func getTranscriptFromJsonFile(fileName string) (string, error) {
 
 func sendEmailsFromMessages(messages map[string]string, sess *session.Session, client pb.ParrotServiceClient) error {
 
-	// create dummy alert data.
-	alertData := alertData{
-		alertTitle:          "uninitiated alert title",
-		deviceType:          "",
-		deviceName:          "",
-		eventTime:           "",
-		eventDate:           "",
-		deviceLocation:      "",
-		conversationSummary: "",
-		alertQuote:          "",
-		fileUrl:             "",
-	}
-
 	// loop through messages, sending emails
 	for fileName, bucketName := range messages {
+
 		transcriptionTool := NewTranscriptSummaryTool()
-		messageContentText := "Please analyze and summarize this transcript: [TRANSCRIPT TEXT HERE]"
 
 		if !strings.HasSuffix(fileName, "json") {
 			continue
@@ -274,6 +250,8 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		if err != nil {
 			return fmt.Errorf("error getting transcript from json file: %v\n", err)
 		}
+
+		messageContentText := "Please analyze and summarize this transcript: " + transcriptString
 
 		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 		anthropicClient := anthropic.NewClient(anthropicKey)
@@ -295,14 +273,15 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 			},
 			Tools: []anthropic.ToolDefinition{
 				{
-					Name:        transcriptTool["name"].(string),
-					Description: transcriptTool["description"].(string),
-					InputSchema: transcriptTool["input_schema"],
+					Name:        transcriptionTool["name"].(string),
+					Description: transcriptionTool["description"].(string),
+					InputSchema: transcriptionTool["input_schema"],
 				},
 			},
 
 			ToolChoice: &anthropic.ToolChoice{
-				Name: transcriptTool["name"].(string),
+				Type: "tool",
+				Name: "transcript_summary",
 			},
 		})
 
@@ -310,26 +289,33 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 			log.Fatalf("Error calling Anthropic API: %v", err)
 		}
 
-		anthropicAlert := *anthropicResponse.Content[0].Text
+		fmt.Printf("AnthropicResponse: %v\n", anthropicResponse.Content[0].Text)
 
-		// TODO: parse anthropic response into json, then set as request, send to email service.o
-		err = json.Unmarshal([]byte(anthropicAlert), &alertData)
+		var anthropicAlert string
+
+		if len(anthropicResponse.Content) > 0 {
+			if anthropicResponse.Content[0].Text != nil {
+				// Get the text if it's a text response
+				anthropicAlert = *anthropicResponse.Content[0].Text
+				fmt.Printf("anthropic response not nil: %v\n", anthropicAlert)
+			} else {
+				return fmt.Errorf("unexpected response format from Anthropic API")
+			}
+		} else {
+			return fmt.Errorf("empty content in Anthropic API response")
+		}
+
+		var anthropicResponseJson anthropicResponseJson
+
+		err = json.Unmarshal([]byte(anthropicAlert), &anthropicResponseJson)
 		if err != nil {
 			return fmt.Errorf("anthropic generated response is not json in intended format: %v\n", err)
 		}
 
 		// Create request from our data
-		req := &pb.AlertDataRequest{
-			AlertTitle:          alertData.alertTitle,
-			DeviceType:          alertData.deviceType,
-			DeviceName:          alertData.deviceName,
-			EventTime:           alertData.eventTime,
-			EventDate:           alertData.eventDate,
-			DeviceLocation:      alertData.deviceLocation,
-			ConversationSummary: alertData.conversationSummary,
-			AlertQuote:          alertData.alertQuote,
-			FileUrl:             alertData.fileUrl,
-		}
+		req := &pb.AlertDataRequest{}
+
+		fmt.Printf("alertTitle set to: %v\n", req.AlertTitle)
 
 		// Send the request
 		resp, err := client.SendAlertData(context.Background(), req)

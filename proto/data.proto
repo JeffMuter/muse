@@ -1,28 +1,33 @@
 syntax = "proto3";
 
-package dataservice;
-option go_package = "github.com/jeffmuter/muse/proto";
+package transcript;
 
-// The Parrot service definition
-service ParrotService {
-  rpc SendAlertData (AlertDataRequest) returns (AlertDataResponse) {}
+option go_package = "github.com/yourusername/transcript/proto";
+
+// Service definition
+service TranscriptService {
+  rpc GetTranscriptSummary (TranscriptRequest) returns (TranscriptSummaryResponse);
 }
 
-// The request message containing the data
-message AlertDataRequest {
-	string alertTitle          = 1;
-	string deviceType          = 2;
-	string deviceName          = 3;
-	string eventTime           = 4;
-	string eventDate           = 5;
-	string deviceLocation      = 6;
-	string conversationSummary = 7;
-	string alertQuote          = 8;
-	string fileUrl             = 9;
+// Request message
+message TranscriptRequest {
+  string transcript_id = 1;
 }
 
-// The response message
-message AlertDataResponse {
-	bool success = 1;
-	string message = 2;
+// Response messages that match your Go structs
+message TranscriptSummaryResponse {
+  string transcription_summary = 1;
+  repeated TranscriptionTopic transcription_topics = 2;
+  repeated TranscriptionAlert transcription_alerts = 3;
+}
+
+message TranscriptionTopic {
+  string name = 1;
+  string description = 2;
+}
+
+message TranscriptionAlert {
+  string type = 1;
+  string description = 2;
+  string quote = 3;
 }
