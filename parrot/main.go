@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -19,8 +18,6 @@ import (
 	pb "github.com/jeffmuter/muse/proto"
 	"github.com/joho/godotenv"
 	"github.com/liushuangls/go-anthropic/v2"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type TranscriptJson struct {
@@ -67,48 +64,106 @@ type TranscriptionAlert struct {
 
 // currently runs once TODO to do this where a sleep of xseconds waits to check for a new file, then run again with new transcript
 func main() {
-
-	// Set up a connection to pigeon service
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("Failed to connect: %v", err)
-	}
-	defer conn.Close()
-
-	// Create gRPC client
-	client := pb.NewParrotServiceClient(conn)
-
 	// Load .env file
-	err = godotenv.Load()
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// Get credentials from .env
-	accessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
-	secretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	queueUrl := os.Getenv("AWS_SQS_QUEUE_URL")
-
-	// Create custom credentials
-	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
-
-	// Create session with credentials
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region:      aws.String("us-east-2"),
-			Credentials: creds,
-		},
-	}))
-
-	// get messages from sqs, stored in map
-	fileBucketDetailMap, err := receiveMessages(sess, queueUrl)
-	if err != nil {
-		fmt.Printf("no message read, or error: %v", err)
-		return
+	// Get API key from environment
+	anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
+	if anthropicKey == "" {
+		log.Fatal("ANTHROPIC_API_KEY is not set in the environment")
 	}
 
-	err = sendEmailsFromMessages(fileBucketDetailMap, sess, client)
+	// Sample transcript (replace with your actual transcript)
+	transcript := "This is a sample transcript for our meeting. We discussed the project timeline and need to follow up with the client by Friday."
 
+	// Create Anthropic client
+	client := anthropic.NewClient(anthropicKey)
+
+	// Create tool definition
+	transcriptTool := createTranscriptSummaryTool()
+
+	// Create the message content
+	messageContent := "Please analyze and summarize this transcript: " + transcript
+
+	// Make the API call with tool calling
+	response, err := client.CreateMessages(context.Background(), anthropic.MessagesRequest{
+		Model:     anthropic.ModelClaude3Opus20240229,
+		MaxTokens: 4096,
+		Messages: []anthropic.Message{
+			{
+				Role: anthropic.RoleUser,
+				Content: []anthropic.MessageContent{
+					{
+						Type: anthropic.MessagesContentTypeText,
+						Text: &messageContent,
+					},
+				},
+			},
+		},
+		Tools: []anthropic.ToolDefinition{
+			{
+				Name:        transcriptTool["name"].(string),
+				Description: transcriptTool["description"].(string),
+				InputSchema: transcriptTool["input_schema"],
+			},
+		},
+		ToolChoice: &anthropic.ToolChoice{
+			Type: "tool",
+			Name: "transcript_summary",
+		},
+	})
+
+	if err != nil {
+		log.Fatalf("Error calling Anthropic API: %v", err)
+	}
+
+	// Process the response
+	fmt.Println("Response received from Anthropic")
+
+	// Check for tool calls in the response
+	if len(response.Content) > 0 && response.Content[0].Type == "tool_use" {
+		toolUse := response.Content[0].MessageContentToolUse
+		if toolUse != nil {
+			// The response contains a tool use with structured JSON
+			fmt.Printf("Tool ID: %s\n", toolUse.ID)
+			fmt.Printf("Tool Name: %s\n", toolUse.Name)
+
+			// Parse the JSON response from the tool
+			var summary TranscriptSummaryResponse
+			err = json.Unmarshal([]byte(toolUse.Input), &summary)
+			if err != nil {
+				log.Fatalf("Error unmarshalling tool response: %v", err)
+			}
+
+			// Print the structured data
+			fmt.Printf("\nTranscription Summary: %s\n", summary.TranscriptionSummary)
+
+			fmt.Println("\nTopics:")
+			for _, topic := range summary.TranscriptionTopics {
+				fmt.Printf("- %s: %s\n", topic.Name, topic.Description)
+			}
+
+			if len(summary.TranscriptionAlerts) > 0 {
+				fmt.Println("\nAlerts:")
+				for _, alert := range summary.TranscriptionAlerts {
+					fmt.Printf("- %s: %s\n  Quote: %s\n",
+						alert.Type, alert.Description, alert.Quote)
+				}
+			}
+
+			// If you need to access the raw JSON
+			rawJSON, _ := json.MarshalIndent(summary, "", "  ")
+			fmt.Printf("\nRaw JSON:\n%s\n", string(rawJSON))
+		}
+	} else if len(response.Content) > 0 && response.Content[0].Text != nil {
+		// Handle text response (fallback if tool wasn't used)
+		fmt.Printf("Text response: %s\n", *response.Content[0].Text)
+	} else {
+		fmt.Println("Unexpected response format")
+	}
 }
 
 // getTranscriptionFileFromS3 takes in a session, name of an s3 bucket, and a file in that bucket, and creates it in a local dir
@@ -236,7 +291,7 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 	// loop through messages, sending emails
 	for fileName, bucketName := range messages {
 
-		transcriptionTool := NewTranscriptSummaryTool()
+		transcriptionTool := createTranscriptSummaryTool()
 
 		if !strings.HasSuffix(fileName, "json") {
 			continue
@@ -250,6 +305,7 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		if err != nil {
 			return fmt.Errorf("error getting transcript from json file: %v\n", err)
 		}
+		fmt.Printf("transcript raw: %s\n", transcriptString)
 
 		messageContentText := "Please analyze and summarize this transcript: " + transcriptString
 
@@ -329,8 +385,7 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 	return nil
 }
 
-// TranscriptSummaryTool creates a tool definition for generating transcript summaries
-func NewTranscriptSummaryTool() map[string]interface{} {
+func createTranscriptSummaryTool() map[string]interface{} {
 	return map[string]interface{}{
 		"name":        "transcript_summary",
 		"description": "Generate a comprehensive summary of a transcript with topics and alerts using well-structured JSON.",
@@ -365,9 +420,9 @@ func NewTranscriptSummaryTool() map[string]interface{} {
 						"type": "object",
 						"properties": map[string]interface{}{
 							"type": map[string]interface{}{
-								"type":               "string",
-								"enum":               []string{"sensitive", "urgent", "action_required", "follow_up", "custom"},
-								"descri       ption": "The type of alert identified in the transcript.",
+								"type":        "string",
+								"enum":        []string{"sensitive", "urgent", "action_required", "follow_up", "custom"},
+								"description": "The type of alert identified in the transcript.",
 							},
 							"description": map[string]interface{}{
 								"type":        "string",
