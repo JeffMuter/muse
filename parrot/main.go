@@ -250,8 +250,6 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 	// loop through messages, sending emails
 	for fileName, bucketName := range messages {
 
-		transcriptionTool := createTranscriptSummaryTool()
-
 		if !strings.HasSuffix(fileName, "json") {
 			continue
 		}
@@ -266,15 +264,13 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		}
 		fmt.Printf("transcript raw: %s\n", transcriptString)
 
-		messageContentText := "Please analyze and summarize this transcript: " + transcriptString
-
 		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 		anthropicClient := anthropic.NewClient(anthropicKey)
 
 		json, err := getAISummaryFromTranscript(transcriptString, anthropicKey, *anthropicClient)
 
 		// Create request from our data
-		req := &pb.AlertDataRequest{}
+		req := &pb.TranscriptSummaryResponse{}
 
 		fmt.Printf("alertTitle set to: %v\n", req.AlertTitle)
 
