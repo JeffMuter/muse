@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -18,6 +19,8 @@ import (
 	pb "github.com/jeffmuter/muse/proto"
 	"github.com/joho/godotenv"
 	"github.com/liushuangls/go-anthropic/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type TranscriptJson struct {
@@ -76,94 +79,50 @@ func main() {
 		log.Fatal("ANTHROPIC_API_KEY is not set in the environment")
 	}
 
-	// Sample transcript (replace with your actual transcript)
-	transcript := "This is a sample transcript for our meeting. We discussed the project timeline and need to follow up with the client by Friday."
+	// check aws sqs for messages
+	// Get credentials from .env
+	accessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	queueUrl := os.Getenv("AWS_SQS_QUEUE_URL")
 
-	// Create Anthropic client
-	client := anthropic.NewClient(anthropicKey)
+	// Create custom credentials
+	creds := credentials.NewStaticCredentials(accessKeyID, secretAccessKey, "")
 
-	// Create tool definition
-	transcriptTool := createTranscriptSummaryTool()
-
-	// Create the message content
-	messageContent := "Please analyze and summarize this transcript: " + transcript
-
-	// Make the API call with tool calling
-	response, err := client.CreateMessages(context.Background(), anthropic.MessagesRequest{
-		Model:     anthropic.ModelClaude3Opus20240229,
-		MaxTokens: 4096,
-		Messages: []anthropic.Message{
-			{
-				Role: anthropic.RoleUser,
-				Content: []anthropic.MessageContent{
-					{
-						Type: anthropic.MessagesContentTypeText,
-						Text: &messageContent,
-					},
-				},
-			},
+	// Create session with credentials
+	sqsSession := session.Must(session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{
+			Region:      aws.String("us-east-2"),
+			Credentials: creds,
 		},
-		Tools: []anthropic.ToolDefinition{
-			{
-				Name:        transcriptTool["name"].(string),
-				Description: transcriptTool["description"].(string),
-				InputSchema: transcriptTool["input_schema"],
-			},
-		},
-		ToolChoice: &anthropic.ToolChoice{
-			Type: "tool",
-			Name: "transcript_summary",
-		},
-	})
+	}))
 
+	mapOfMessageDetails, err := receiveMessages(sqsSession, queueUrl)
 	if err != nil {
-		log.Fatalf("Error calling Anthropic API: %v", err)
+		fmt.Printf("error receiving messages: %v\n", err)
 	}
 
-	// Process the response
-	fmt.Println("Response received from Anthropic")
+	fmt.Printf("map of details length: %d\n", len(mapOfMessageDetails))
 
-	// Check for tool calls in the response
-	if len(response.Content) > 0 && response.Content[0].Type == "tool_use" {
-		toolUse := response.Content[0].MessageContentToolUse
-		if toolUse != nil {
-			// The response contains a tool use with structured JSON
-			fmt.Printf("Tool ID: %s\n", toolUse.ID)
-			fmt.Printf("Tool Name: %s\n", toolUse.Name)
+	// open s3 session
+	s3Session, err := session.NewSession()
 
-			// Parse the JSON response from the tool
-			var summary TranscriptSummaryResponse
-			err = json.Unmarshal([]byte(toolUse.Input), &summary)
-			if err != nil {
-				log.Fatalf("Error unmarshalling tool response: %v", err)
-			}
-
-			// Print the structured data
-			fmt.Printf("\nTranscription Summary: %s\n", summary.TranscriptionSummary)
-
-			fmt.Println("\nTopics:")
-			for _, topic := range summary.TranscriptionTopics {
-				fmt.Printf("- %s: %s\n", topic.Name, topic.Description)
-			}
-
-			if len(summary.TranscriptionAlerts) > 0 {
-				fmt.Println("\nAlerts:")
-				for _, alert := range summary.TranscriptionAlerts {
-					fmt.Printf("- %s: %s\n  Quote: %s\n",
-						alert.Type, alert.Description, alert.Quote)
-				}
-			}
-
-			// If you need to access the raw JSON
-			rawJSON, _ := json.MarshalIndent(summary, "", "  ")
-			fmt.Printf("\nRaw JSON:\n%s\n", string(rawJSON))
-		}
-	} else if len(response.Content) > 0 && response.Content[0].Text != nil {
-		// Handle text response (fallback if tool wasn't used)
-		fmt.Printf("Text response: %s\n", *response.Content[0].Text)
-	} else {
-		fmt.Println("Unexpected response format")
+	protoConn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Failed to connect: %v", err)
 	}
+	defer protoConn.Close()
+
+	// open protobuff client to send notifications to email service.
+	protoClient := pb.NewParrotServiceClient(protoConn)
+
+	// loop through map, and get transcript from now local filename
+	err = sendEmailsFromMessages(mapOfMessageDetails, s3Session, protoClient)
+	if err != nil {
+		fmt.Printf("error sending emails using map of s3 details recieved from sqs: %v\n", err)
+	}
+
+	fmt.Printf("error sending emails: %v\n", err)
+
 }
 
 // getTranscriptionFileFromS3 takes in a session, name of an s3 bucket, and a file in that bucket, and creates it in a local dir
@@ -312,61 +271,7 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 		anthropicClient := anthropic.NewClient(anthropicKey)
 
-		// set to anthropic response and use it for something.
-		anthropicResponse, err := anthropicClient.CreateMessages(context.Background(), anthropic.MessagesRequest{
-			Model:     anthropic.ModelClaude3Dot5HaikuLatest,
-			MaxTokens: 4096,
-			Messages: []anthropic.Message{
-				{
-					Role: anthropic.RoleUser,
-					Content: []anthropic.MessageContent{
-						{
-							Type: anthropic.MessagesContentTypeText,
-							Text: &messageContentText,
-						},
-					},
-				},
-			},
-			Tools: []anthropic.ToolDefinition{
-				{
-					Name:        transcriptionTool["name"].(string),
-					Description: transcriptionTool["description"].(string),
-					InputSchema: transcriptionTool["input_schema"],
-				},
-			},
-
-			ToolChoice: &anthropic.ToolChoice{
-				Type: "tool",
-				Name: "transcript_summary",
-			},
-		})
-
-		if err != nil {
-			log.Fatalf("Error calling Anthropic API: %v", err)
-		}
-
-		fmt.Printf("AnthropicResponse: %v\n", anthropicResponse.Content[0].Text)
-
-		var anthropicAlert string
-
-		if len(anthropicResponse.Content) > 0 {
-			if anthropicResponse.Content[0].Text != nil {
-				// Get the text if it's a text response
-				anthropicAlert = *anthropicResponse.Content[0].Text
-				fmt.Printf("anthropic response not nil: %v\n", anthropicAlert)
-			} else {
-				return fmt.Errorf("unexpected response format from Anthropic API")
-			}
-		} else {
-			return fmt.Errorf("empty content in Anthropic API response")
-		}
-
-		var anthropicResponseJson anthropicResponseJson
-
-		err = json.Unmarshal([]byte(anthropicAlert), &anthropicResponseJson)
-		if err != nil {
-			return fmt.Errorf("anthropic generated response is not json in intended format: %v\n", err)
-		}
+		json, err := getAISummaryFromTranscript(transcriptString, anthropicKey, *anthropicClient)
 
 		// Create request from our data
 		req := &pb.AlertDataRequest{}
@@ -441,4 +346,93 @@ func createTranscriptSummaryTool() map[string]interface{} {
 			"required": []string{"transcriptionSummary", "transcriptionTopics"},
 		},
 	}
+}
+
+func getAISummaryFromTranscript(transcript string, anthropicKey string, client anthropic.Client) (TranscriptSummaryResponse, error) {
+
+	var summary TranscriptSummaryResponse
+
+	// Create tool definition
+	transcriptTool := createTranscriptSummaryTool()
+
+	// Create the message content
+	messageContent := "Please analyze and summarize this transcript: " + transcript
+
+	// Make the API call with tool calling
+	response, err := client.CreateMessages(context.Background(), anthropic.MessagesRequest{
+		Model:     anthropic.ModelClaude3Opus20240229,
+		MaxTokens: 4096,
+		Messages: []anthropic.Message{
+			{
+				Role: anthropic.RoleUser,
+				Content: []anthropic.MessageContent{
+					{
+						Type: anthropic.MessagesContentTypeText,
+						Text: &messageContent,
+					},
+				},
+			},
+		},
+		Tools: []anthropic.ToolDefinition{
+			{
+				Name:        transcriptTool["name"].(string),
+				Description: transcriptTool["description"].(string),
+				InputSchema: transcriptTool["input_schema"],
+			},
+		},
+		ToolChoice: &anthropic.ToolChoice{
+			Type: "tool",
+			Name: "transcript_summary",
+		},
+	})
+
+	if err != nil {
+		log.Fatalf("Error calling Anthropic API: %v", err)
+	}
+
+	// Process the response
+	fmt.Println("Response received from Anthropic")
+
+	// Check for tool calls in the response
+	if len(response.Content) > 0 && response.Content[0].Type == "tool_use" {
+		toolUse := response.Content[0].MessageContentToolUse
+		if toolUse != nil {
+			// The response contains a tool use with structured JSON
+			fmt.Printf("Tool ID: %s\n", toolUse.ID)
+			fmt.Printf("Tool Name: %s\n", toolUse.Name)
+
+			// Parse the JSON response from the tool
+			err = json.Unmarshal([]byte(toolUse.Input), &summary)
+			if err != nil {
+				log.Fatalf("Error unmarshalling tool response: %v", err)
+			}
+
+			// Print the structured data
+			fmt.Printf("\nTranscription Summary: %s\n", summary.TranscriptionSummary)
+
+			fmt.Println("\nTopics:")
+			for _, topic := range summary.TranscriptionTopics {
+				fmt.Printf("- %s: %s\n", topic.Name, topic.Description)
+			}
+
+			if len(summary.TranscriptionAlerts) > 0 {
+				fmt.Println("\nAlerts:")
+				for _, alert := range summary.TranscriptionAlerts {
+					fmt.Printf("- %s: %s\n  Quote: %s\n",
+						alert.Type, alert.Description, alert.Quote)
+				}
+			}
+
+			// If you need to access the raw JSON
+			rawJSON, _ := json.MarshalIndent(summary, "", "  ")
+			fmt.Printf("\nRaw JSON:\n%s\n", string(rawJSON))
+		}
+	} else if len(response.Content) > 0 && response.Content[0].Text != nil {
+		// Handle text response (fallback if tool wasn't used)
+		fmt.Printf("Text response: %s\n", *response.Content[0].Text)
+	} else {
+		fmt.Println("Unexpected response format")
+	}
+
+	return summary, nil
 }
