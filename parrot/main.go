@@ -113,7 +113,7 @@ func main() {
 	defer protoConn.Close()
 
 	// open protobuff client to send notifications to email service.
-	protoClient := pb.NewParrotServiceClient(protoConn)
+	protoClient := pb.NewTranscriptServiceClient(protoConn)
 
 	// loop through map, and get transcript from now local filename
 	err = sendEmailsFromMessages(mapOfMessageDetails, s3Session, protoClient)
@@ -245,7 +245,8 @@ func getTranscriptFromJsonFile(fileName string) (string, error) {
 
 }
 
-func sendEmailsFromMessages(messages map[string]string, sess *session.Session, client pb.ParrotServiceClient) error {
+// transcriptserviceclient, may be wrong type.
+func sendEmailsFromMessages(messages map[string]string, sess *session.Session, client pb.TranscriptServiceClient) error {
 
 	// loop through messages, sending emails
 	for fileName, bucketName := range messages {
@@ -268,19 +269,38 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		anthropicClient := anthropic.NewClient(anthropicKey)
 
 		json, err := getAISummaryFromTranscript(transcriptString, anthropicKey, *anthropicClient)
+		if err != nil {
+			return fmt.Errorf("error getting AI summary from transcript: %v", err)
+		}
 
 		// Create request from our data
-		req := &pb.TranscriptSummaryResponse{}
-
-		fmt.Printf("alertTitle set to: %v\n", req.AlertTitle)
-
-		// Send the request
-		resp, err := client.SendAlertData(context.Background(), req)
-		if err != nil {
-			log.Printf("Failed to send data: %v", err)
-		} else {
-			log.Printf("Response from service1: %s", resp.Message)
+		req := &pb.TranscriptSummaryResponse{
+			TranscriptionSummary: json.TranscriptionSummary,
+			// Map the topics
+			TranscriptionTopics: make([]*pb.TranscriptionTopic, len(json.TranscriptionTopics)),
+			// Map the alerts if they exist
+			TranscriptionAlerts: make([]*pb.TranscriptionAlert, len(json.TranscriptionAlerts)),
 		}
+
+		// Convert topics
+		for i, topic := range json.TranscriptionTopics {
+			req.TranscriptionTopics[i] = &pb.TranscriptionTopic{
+				Name:        topic.Name,
+				Description: topic.Description,
+			}
+		}
+
+		// Convert alerts
+		for i, alert := range json.TranscriptionAlerts {
+			req.TranscriptionAlerts[i] = &pb.TranscriptionAlert{
+				Type:        alert.Type,
+				Description: alert.Description,
+				Quote:       alert.Quote,
+			}
+		}
+
+		// Send the request TODO: handle response here.
+		_, err = client.GetTranscriptSummary(context.Background(), req)
 	}
 
 	return nil
