@@ -113,7 +113,7 @@ func main() {
 	defer protoConn.Close()
 
 	// open protobuff client to send notifications to email service.
-	protoClient := pb.NewTranscriptServiceClient(protoConn)
+	protoClient := pb.NewPigeonServiceClient(protoConn)
 
 	// loop through map, and get transcript from now local filename
 	err = sendEmailsFromMessages(mapOfMessageDetails, s3Session, protoClient)
@@ -247,10 +247,8 @@ func getTranscriptFromJsonFile(fileName string) (string, error) {
 
 // transcriptserviceclient, may be wrong type.
 func sendEmailsFromMessages(messages map[string]string, sess *session.Session, client pb.TranscriptServiceClient) error {
-
 	// loop through messages, sending emails
 	for fileName, bucketName := range messages {
-
 		if !strings.HasSuffix(fileName, "json") {
 			continue
 		}
@@ -268,39 +266,50 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		anthropicKey := os.Getenv("ANTHROPIC_API_KEY")
 		anthropicClient := anthropic.NewClient(anthropicKey)
 
-		json, err := getAISummaryFromTranscript(transcriptString, anthropicKey, *anthropicClient)
+		summaryData, err := getAISummaryFromTranscript(transcriptString, anthropicKey, *anthropicClient)
 		if err != nil {
 			return fmt.Errorf("error getting AI summary from transcript: %v", err)
 		}
 
-		// Create request from our data
-		req := &pb.TranscriptSummaryResponse{
-			TranscriptionSummary: json.TranscriptionSummary,
-			// Map the topics
-			TranscriptionTopics: make([]*pb.TranscriptionTopic, len(json.TranscriptionTopics)),
-			// Map the alerts if they exist
-			TranscriptionAlerts: make([]*pb.TranscriptionAlert, len(json.TranscriptionAlerts)),
+		// Create the gRPC message with Anthropic data
+		summary := &pb.TranscriptSummaryResponse{
+			TranscriptionSummary: summaryData.TranscriptionSummary,
+			TranscriptId:         filepath.Base(fileName), // Using the new field we added
+			TranscriptionTopics:  make([]*pb.TranscriptionTopic, len(summaryData.TranscriptionTopics)),
+			TranscriptionAlerts:  make([]*pb.TranscriptionAlert, len(summaryData.TranscriptionAlerts)),
 		}
 
 		// Convert topics
-		for i, topic := range json.TranscriptionTopics {
-			req.TranscriptionTopics[i] = &pb.TranscriptionTopic{
+		for i, topic := range summaryData.TranscriptionTopics {
+			summary.TranscriptionTopics[i] = &pb.TranscriptionTopic{
 				Name:        topic.Name,
 				Description: topic.Description,
 			}
 		}
 
 		// Convert alerts
-		for i, alert := range json.TranscriptionAlerts {
-			req.TranscriptionAlerts[i] = &pb.TranscriptionAlert{
+		for i, alert := range summaryData.TranscriptionAlerts {
+			summary.TranscriptionAlerts[i] = &pb.TranscriptionAlert{
 				Type:        alert.Type,
 				Description: alert.Description,
 				Quote:       alert.Quote,
 			}
 		}
 
-		// Send the request TODO: handle response here.
-		_, err = client.GetTranscriptSummary(context.Background(), req)
+		// Send the complete summary to the next service for processing
+		result, err := client.ProcessTranscriptSummary(context.Background(), summary)
+		if err != nil {
+			return fmt.Errorf("error sending transcript summary for processing: %v", err)
+		}
+
+		// Check if processing was successful
+		if !result.Success {
+			fmt.Printf("Warning: Processing failed for transcript %s: %s\n",
+				filepath.Base(fileName), result.Message)
+		} else {
+			fmt.Printf("Successfully processed transcript %s: %s\n",
+				filepath.Base(fileName), result.Message)
+		}
 	}
 
 	return nil

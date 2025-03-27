@@ -5,20 +5,20 @@ package transcript;
 option go_package = "github.com/yourusername/transcript/proto";
 
 // Service definition
-service TranscriptService {
-  rpc GetTranscriptSummary (TranscriptRequest) returns (TranscriptSummaryResponse);
+service PigeonService {
+  rpc ProcessTranscriptSummary (TranscriptSummaryResponse) returns (ProcessingResult);
 }
 
-// Request message
 message TranscriptRequest {
   string transcript_id = 1;
 }
 
-// Response messages that match your Go structs
+// Response message that contains the transcript summary data
 message TranscriptSummaryResponse {
   string transcription_summary = 1;
   repeated TranscriptionTopic transcription_topics = 2;
   repeated TranscriptionAlert transcription_alerts = 3;
+  string transcript_id = 4; // Added to identify which transcript this is
 }
 
 message TranscriptionTopic {
@@ -30,4 +30,10 @@ message TranscriptionAlert {
   string type = 1;
   string description = 2;
   string quote = 3;
+}
+
+// New result message for processing confirmation
+message ProcessingResult {
+  bool success = 1;
+  string message = 2;
 }

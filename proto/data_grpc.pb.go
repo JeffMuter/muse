@@ -19,89 +19,89 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	TranscriptService_GetTranscriptSummary_FullMethodName = "/transcript.TranscriptService/GetTranscriptSummary"
+	PigeonService_ProcessTranscriptSummary_FullMethodName = "/transcript.PigeonService/ProcessTranscriptSummary"
 )
 
-// TranscriptServiceClient is the client API for TranscriptService service.
+// PigeonServiceClient is the client API for PigeonService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type TranscriptServiceClient interface {
-	GetTranscriptSummary(ctx context.Context, in *TranscriptRequest, opts ...grpc.CallOption) (*TranscriptSummaryResponse, error)
+type PigeonServiceClient interface {
+	ProcessTranscriptSummary(ctx context.Context, in *TranscriptSummaryResponse, opts ...grpc.CallOption) (*ProcessingResult, error)
 }
 
-type transcriptServiceClient struct {
+type pigeonServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewTranscriptServiceClient(cc grpc.ClientConnInterface) TranscriptServiceClient {
-	return &transcriptServiceClient{cc}
+func NewPigeonServiceClient(cc grpc.ClientConnInterface) PigeonServiceClient {
+	return &pigeonServiceClient{cc}
 }
 
-func (c *transcriptServiceClient) GetTranscriptSummary(ctx context.Context, in *TranscriptRequest, opts ...grpc.CallOption) (*TranscriptSummaryResponse, error) {
-	out := new(TranscriptSummaryResponse)
-	err := c.cc.Invoke(ctx, TranscriptService_GetTranscriptSummary_FullMethodName, in, out, opts...)
+func (c *pigeonServiceClient) ProcessTranscriptSummary(ctx context.Context, in *TranscriptSummaryResponse, opts ...grpc.CallOption) (*ProcessingResult, error) {
+	out := new(ProcessingResult)
+	err := c.cc.Invoke(ctx, PigeonService_ProcessTranscriptSummary_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// TranscriptServiceServer is the server API for TranscriptService service.
-// All implementations must embed UnimplementedTranscriptServiceServer
+// PigeonServiceServer is the server API for PigeonService service.
+// All implementations must embed UnimplementedPigeonServiceServer
 // for forward compatibility
-type TranscriptServiceServer interface {
-	GetTranscriptSummary(context.Context, *TranscriptRequest) (*TranscriptSummaryResponse, error)
-	mustEmbedUnimplementedTranscriptServiceServer()
+type PigeonServiceServer interface {
+	ProcessTranscriptSummary(context.Context, *TranscriptSummaryResponse) (*ProcessingResult, error)
+	mustEmbedUnimplementedPigeonServiceServer()
 }
 
-// UnimplementedTranscriptServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedTranscriptServiceServer struct {
+// UnimplementedPigeonServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedPigeonServiceServer struct {
 }
 
-func (UnimplementedTranscriptServiceServer) GetTranscriptSummary(context.Context, *TranscriptRequest) (*TranscriptSummaryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetTranscriptSummary not implemented")
+func (UnimplementedPigeonServiceServer) ProcessTranscriptSummary(context.Context, *TranscriptSummaryResponse) (*ProcessingResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProcessTranscriptSummary not implemented")
 }
-func (UnimplementedTranscriptServiceServer) mustEmbedUnimplementedTranscriptServiceServer() {}
+func (UnimplementedPigeonServiceServer) mustEmbedUnimplementedPigeonServiceServer() {}
 
-// UnsafeTranscriptServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to TranscriptServiceServer will
+// UnsafePigeonServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PigeonServiceServer will
 // result in compilation errors.
-type UnsafeTranscriptServiceServer interface {
-	mustEmbedUnimplementedTranscriptServiceServer()
+type UnsafePigeonServiceServer interface {
+	mustEmbedUnimplementedPigeonServiceServer()
 }
 
-func RegisterTranscriptServiceServer(s grpc.ServiceRegistrar, srv TranscriptServiceServer) {
-	s.RegisterService(&TranscriptService_ServiceDesc, srv)
+func RegisterPigeonServiceServer(s grpc.ServiceRegistrar, srv PigeonServiceServer) {
+	s.RegisterService(&PigeonService_ServiceDesc, srv)
 }
 
-func _TranscriptService_GetTranscriptSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TranscriptRequest)
+func _PigeonService_ProcessTranscriptSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TranscriptSummaryResponse)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(TranscriptServiceServer).GetTranscriptSummary(ctx, in)
+		return srv.(PigeonServiceServer).ProcessTranscriptSummary(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: TranscriptService_GetTranscriptSummary_FullMethodName,
+		FullMethod: PigeonService_ProcessTranscriptSummary_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TranscriptServiceServer).GetTranscriptSummary(ctx, req.(*TranscriptRequest))
+		return srv.(PigeonServiceServer).ProcessTranscriptSummary(ctx, req.(*TranscriptSummaryResponse))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// TranscriptService_ServiceDesc is the grpc.ServiceDesc for TranscriptService service.
+// PigeonService_ServiceDesc is the grpc.ServiceDesc for PigeonService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var TranscriptService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "transcript.TranscriptService",
-	HandlerType: (*TranscriptServiceServer)(nil),
+var PigeonService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "transcript.PigeonService",
+	HandlerType: (*PigeonServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetTranscriptSummary",
-			Handler:    _TranscriptService_GetTranscriptSummary_Handler,
+			MethodName: "ProcessTranscriptSummary",
+			Handler:    _PigeonService_ProcessTranscriptSummary_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
