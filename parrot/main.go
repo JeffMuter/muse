@@ -104,7 +104,13 @@ func main() {
 	fmt.Printf("map of details length: %d\n", len(mapOfMessageDetails))
 
 	// open s3 session
-	s3Session, err := session.NewSession()
+	s3Session, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-2"),
+		Credentials: credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""),
+	})
+	if err != nil {
+		log.Fatalf("error creating new aws session: %v\n", err)
+	}
 
 	protoConn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -172,7 +178,7 @@ func receiveMessages(sess *session.Session, queueUrl string) (map[string]string,
 
 	resp, err := sqsClient.ReceiveMessage(&sqs.ReceiveMessageInput{
 		QueueUrl:            aws.String(queueUrl),
-		MaxNumberOfMessages: aws.Int64(10),
+		MaxNumberOfMessages: aws.Int64(3),
 		WaitTimeSeconds:     aws.Int64(2),
 	})
 	if err != nil {
