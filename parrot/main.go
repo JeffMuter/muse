@@ -246,7 +246,7 @@ func getTranscriptFromJsonFile(fileName string) (string, error) {
 }
 
 // transcriptserviceclient, may be wrong type.
-func sendEmailsFromMessages(messages map[string]string, sess *session.Session, client pb.TranscriptServiceClient) error {
+func sendEmailsFromMessages(messages map[string]string, sess *session.Session, client pb.PigeonServiceClient) error {
 	// loop through messages, sending emails
 	for fileName, bucketName := range messages {
 		if !strings.HasSuffix(fileName, "json") {

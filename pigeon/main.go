@@ -17,53 +17,64 @@ import (
 	"google.golang.org/grpc"
 )
 
-type alertData struct {
-	alertTitle          string
-	deviceType          string
-	deviceName          string
-	eventTime           string
-	eventDate           string
-	deviceLocation      string
-	conversationSummary string
-	alertQuote          string
-	fileUrl             string
+// TranscriptData represents the data structure for storing transcript information
+type TranscriptData struct {
+	transcriptID string
+	summary      string
+	topics       []*pb.TranscriptionTopic
+	alerts       []*pb.TranscriptionAlert
+	mu           sync.Mutex
 }
 
+// rpcServer implements the TranscriptServiceServer interface
 type rpcServer struct {
-	pb.UnimplementedParrotServiceServer
-	lastAlert alertData
-	mu        sync.Mutex
-	alertChan chan alertData
+	pb.UnimplementedPigeonServiceServer
+	transcripts         map[string]*TranscriptData
+	mu                  sync.Mutex
+	notificationChannel chan *pb.TranscriptionAlert
 }
 
-func (rpcS *rpcServer) SendAlertData(ctx context.Context, req *pb.AlertDataRequest) (*pb.AlertDataResponse, error) {
-	alert := alertData{
-		alertTitle:          req.AlertTitle,
-		deviceType:          req.DeviceType,
-		deviceName:          req.DeviceName,
-		eventTime:           req.EventTime,
-		eventDate:           req.EventDate,
-		deviceLocation:      req.DeviceLocation,
-		conversationSummary: req.ConversationSummary,
-		alertQuote:          req.AlertQuote,
-		fileUrl:             req.FileUrl,
+// GetTranscriptSummary implements the TranscriptService RPC method
+func (rpcS *rpcServer) GetTranscriptSummary(ctx context.Context, req *pb.TranscriptRequest) (*pb.TranscriptSummaryResponse, error) {
+	transcriptID := req.GetTranscriptId()
+	log.Printf("Received request for transcript summary with ID: %s", transcriptID)
+
+	// Here you would typically fetch the transcript data from a database or other source
+	// For this example, we're creating mock data to demonstrate the structure
+
+	// Create a response with transcript summary information
+	response := &pb.TranscriptSummaryResponse{
+		TranscriptionSummary: fmt.Sprintf("Summary for transcript %s", transcriptID),
+		TranscriptionTopics: []*pb.TranscriptionTopic{
+			{
+				Name:        "Main Topic",
+				Description: "Primary subject of the conversation",
+			},
+			{
+				Name:        "Secondary Topic",
+				Description: "Additional relevant subject discussed",
+			},
+		},
+		TranscriptionAlerts: []*pb.TranscriptionAlert{
+			{
+				Type:        "Urgent",
+				Description: "Potential urgent issue detected",
+				Quote:       "I need this resolved immediately",
+			},
+		},
 	}
 
-	rpcS.mu.Lock()
-	rpcS.lastAlert = alert
-	rpcS.mu.Unlock()
+	// Check if there are any alerts that need email notification
+	for _, alert := range response.TranscriptionAlerts {
+		// Send alert to notification channel for email processing
+		rpcS.notificationChannel <- alert
+	}
 
-	// Send the alert data through the channel
-	rpcS.alertChan <- alert
-
-	// Return success response
-	return &pb.AlertDataResponse{
-		Success: true,
-		Message: "AlertData received successfully",
-	}, nil
+	return response, nil
 }
 
-func sendEmail(alertData alertData, accessKeyID, secretAccessKey string) error {
+// sendEmail sends an email notification for an alert
+func sendEmail(alert *pb.TranscriptionAlert, accessKeyID, secretAccessKey string) error {
 	// 1. Configure AWS session
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-2"),
@@ -79,28 +90,21 @@ func sendEmail(alertData alertData, accessKeyID, secretAccessKey string) error {
 	// 3. Prepare email content
 	recipient := "jefferymuter@yahoo.com" // Must be verified in SES
 	sender := "muterjeffery@gmail.com"    // Must be verified if in sandbox mode
-	subject := "Muse Alert: " + alertData.alertTitle + " Detected"
+	subject := "Muse Alert: " + alert.Type + " Detected"
 	textBody := "This is an alert from Muse."
 
-	htmlBody := `<h1>Muse: ` + alertData.alertTitle + ` Detected</h1>
+	htmlBody := `<h1>Muse: ` + alert.Type + ` Alert Detected</h1>
 		<br>
-		<p>Muse has discovered an ` + alertData.alertTitle + ` from: ` + alertData.deviceType + ` ` + alertData.deviceName + `</p>
+		<p>Muse has discovered an alert in a transcript.</p>
+		<br>
+		<h3>Alert description:</h3>
+		<br> 
+		` + alert.Description + `
 		<br>
 		<h3>Alert triggered by quote:</h3>
-		<br> 
-		` + alertData.alertQuote + `
 		<br>
-		<h3>Conversation Summary:</h3>
-		<br>
-		` + alertData.conversationSummary + `
-		<br>
-		<h2>Estimated Event Details:</h3>
-		<br>
-		<h3>Time: ~` + alertData.eventTime + `</h3>
-		<br>
-		<h3>Date: ` + alertData.eventDate + `</h3>
-		<br>
-		<h3>Link to file ` + alertData.fileUrl + `<br>`
+		"` + alert.Quote + `"
+		<br>`
 
 	// 4. Specify email parameters
 	input := &ses.SendEmailInput{
@@ -139,7 +143,6 @@ func sendEmail(alertData alertData, accessKeyID, secretAccessKey string) error {
 }
 
 func main() {
-
 	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
@@ -149,10 +152,14 @@ func main() {
 	// Get credentials from .env
 	accessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
 	secretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	alertChan := make(chan alertData)
 
+	// Create notification channel for alerts that need emails
+	notificationChannel := make(chan *pb.TranscriptionAlert, 100)
+
+	// Initialize the server
 	server := &rpcServer{
-		alertChan: alertChan,
+		transcripts:         make(map[string]*TranscriptData),
+		notificationChannel: notificationChannel,
 	}
 
 	// Create a TCP listener on port 50051
@@ -160,13 +167,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
+
 	// Create a new gRPC server
 	grpcServer := grpc.NewServer()
 
-	// Register our server
-	pb.RegisterParrotServiceServer(grpcServer, server)
+	// Register our server as a TranscriptService
+	pb.RegisterPigeonServiceServer(grpcServer, server)
 
-	fmt.Println("pigeon created grpcServer, listening...")
+	fmt.Println("Pigeon created gRPC server, listening on port 50051...")
 
 	// Start the gRPC server in a goroutine
 	go func() {
@@ -176,9 +184,9 @@ func main() {
 	}()
 
 	// Main loop to process alerts and send emails
-	for alertData := range alertChan {
-		fmt.Println("Received alert data, sending email...")
-		if err := sendEmail(alertData, accessKeyID, secretAccessKey); err != nil {
+	for alert := range notificationChannel {
+		fmt.Printf("Processing alert of type '%s', sending email...\n", alert.Type)
+		if err := sendEmail(alert, accessKeyID, secretAccessKey); err != nil {
 			log.Printf("Failed to send email: %v", err)
 		}
 	}
