@@ -32,34 +32,32 @@ type rpcServer struct {
 	pb.UnimplementedPigeonServiceServer
 	transcripts         map[string]*TranscriptData
 	mu                  sync.Mutex
-	notificationChannel chan *pb.TranscriptionAlert
+	notificationChannel chan *pb.TranscriptSummaryResponse
 }
 
 // ProcessTranscriptSummary implements the PigeonServiceServer interface
 func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.TranscriptSummaryResponse) (*pb.ProcessingResult, error) {
-	log.Printf("Received transcript summary for processing with ID: %s", req.GetTranscriptId())
+	fmt.Printf("Received transcript summary for processing with ID: %s", req.GetTranscriptId())
 
 	// Process the transcript summary data
 	transcriptID := req.GetTranscriptId()
 	summary := req.GetTranscriptionSummary()
 
-	log.Printf("Processing summary: %s", summary)
-
-	// Store transcript data in memory (would typically go to a database in production)
-	rpcS.mu.Lock()
-	rpcS.transcripts[transcriptID] = &TranscriptData{
+	fmt.Printf("Processing summary: %s", summary)
+	thisTranscriptData := &TranscriptData{
 		transcriptID: transcriptID,
 		summary:      summary,
 		topics:       req.GetTranscriptionTopics(),
 		alerts:       req.GetTranscriptionAlerts(),
 	}
+
+	// Store transcript data in memory
+	rpcS.mu.Lock()
+	rpcS.transcripts[transcriptID] = thisTranscriptData
 	rpcS.mu.Unlock()
 
-	// Check if there are any alerts that need email notification
-	for _, alert := range req.GetTranscriptionAlerts() {
-		// Send alert to notification channel for email processing
-		rpcS.notificationChannel <- alert
-	}
+	// add to noti chan, which will trigger an email
+	rpcS.notificationChannel <- req
 
 	// Create and return a success result
 	return &pb.ProcessingResult{
@@ -72,9 +70,6 @@ func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.Tra
 func (rpcS *rpcServer) GetTranscriptSummary(ctx context.Context, req *pb.TranscriptRequest) (*pb.TranscriptSummaryResponse, error) {
 	transcriptID := req.GetTranscriptId()
 	log.Printf("Received request for transcript summary with ID: %s", transcriptID)
-
-	// Here you would typically fetch the transcript data from a database or other source
-	// For this example, we're creating mock data to demonstrate the structure
 
 	// Create a response with transcript summary information
 	response := &pb.TranscriptSummaryResponse{
@@ -98,17 +93,11 @@ func (rpcS *rpcServer) GetTranscriptSummary(ctx context.Context, req *pb.Transcr
 		},
 	}
 
-	// Check if there are any alerts that need email notification
-	for _, alert := range response.TranscriptionAlerts {
-		// Send alert to notification channel for email processing
-		rpcS.notificationChannel <- alert
-	}
-
 	return response, nil
 }
 
 // sendEmail sends an email notification for an alert
-func sendEmail(alert *pb.TranscriptionAlert, accessKeyID, secretAccessKey string) error {
+func sendEmail(summary *pb.TranscriptSummaryResponse, accessKeyID, secretAccessKey string) error {
 	// 1. Configure AWS session
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-2"),
@@ -121,23 +110,31 @@ func sendEmail(alert *pb.TranscriptionAlert, accessKeyID, secretAccessKey string
 	// 2. Create an SES service client
 	svc := ses.New(sess)
 
+	// what we have to show:
+	//	TranscriptionSummary string
+	//	TranscriptionTopics  []*TranscriptionTopic
+	//	TranscriptionAlerts  []*TranscriptionAlert
+
 	// 3. Prepare email content
 	recipient := "jefferymuter@yahoo.com" // Must be verified in SES
 	sender := "muterjeffery@gmail.com"    // Must be verified if in sandbox mode
-	subject := "Muse Alert: " + alert.Type + " Detected"
-	textBody := "This is an alert from Muse."
 
-	htmlBody := `<h1>Muse: ` + alert.Type + ` Alert Detected</h1>
+	subject := "Muse Summary: " + string(len(summary.TranscriptionAlerts)) + " Alerts Detected"
+
+	htmlBody := `<h2>Conversation Summary</h2>
 		<br>
-		<p>Muse has discovered an alert in a transcript.</p>
+
+		<p>` + summary.TranscriptionSummary + `</p>
 		<br>
-		<h3>Alert description:</h3>
+
+		<h3>Alerts:</h3>
 		<br> 
-		` + alert.Description + `
+
+		` + string(summary.TranscriptionAlerts[0].Type) + `
 		<br>
 		<h3>Alert triggered by quote:</h3>
 		<br>
-		"` + alert.Quote + `"
+		"` + summary.TranscriptionTopics[0] + `"
 		<br>`
 
 	// 4. Specify email parameters
@@ -188,7 +185,9 @@ func main() {
 	secretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 
 	// Create notification channel for alerts that need emails
-	notificationChannel := make(chan *pb.TranscriptionAlert, 100)
+	//	notificationChannel := make(chan *pb.TranscriptionAlert, 100)
+
+	notificationChannel := make(chan *pb.TranscriptSummaryResponse, 100)
 
 	// Initialize the server
 	server := &rpcServer{
@@ -217,10 +216,9 @@ func main() {
 		}
 	}()
 
-	// Main loop to process alerts and send emails
-	for alert := range notificationChannel {
-		fmt.Printf("Processing alert of type '%s', sending email...\n", alert.Type)
-		err := sendEmail(alert, accessKeyID, secretAccessKey)
+	// Main loop to process summaries and send emails
+	for summary := range notificationChannel {
+		err := sendEmail(summary, accessKeyID, secretAccessKey)
 		if err != nil {
 			log.Printf("Failed to send email: %v", err)
 		}

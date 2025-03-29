@@ -9,3 +9,13 @@ services:
       dockerfile: Dockerfile
     depends_on: 
       - pelican
+  pigeon:
+    build: 
+      context:    ./pigeon
+      dockerfile: Dockerfile
+  parrot:
+    build: 
+      context:    ./parrot
+      dockerfile: Dockerfile
+    depends_on: 
+      - pigeon
