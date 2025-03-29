@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -32,6 +33,39 @@ type rpcServer struct {
 	transcripts         map[string]*TranscriptData
 	mu                  sync.Mutex
 	notificationChannel chan *pb.TranscriptionAlert
+}
+
+// ProcessTranscriptSummary implements the PigeonServiceServer interface
+func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.TranscriptSummaryResponse) (*pb.ProcessingResult, error) {
+	log.Printf("Received transcript summary for processing with ID: %s", req.GetTranscriptId())
+
+	// Process the transcript summary data
+	transcriptID := req.GetTranscriptId()
+	summary := req.GetTranscriptionSummary()
+
+	log.Printf("Processing summary: %s", summary)
+
+	// Store transcript data in memory (would typically go to a database in production)
+	rpcS.mu.Lock()
+	rpcS.transcripts[transcriptID] = &TranscriptData{
+		transcriptID: transcriptID,
+		summary:      summary,
+		topics:       req.GetTranscriptionTopics(),
+		alerts:       req.GetTranscriptionAlerts(),
+	}
+	rpcS.mu.Unlock()
+
+	// Check if there are any alerts that need email notification
+	for _, alert := range req.GetTranscriptionAlerts() {
+		// Send alert to notification channel for email processing
+		rpcS.notificationChannel <- alert
+	}
+
+	// Create and return a success result
+	return &pb.ProcessingResult{
+		Success: true,
+		Message: fmt.Sprintf("Successfully processed transcript summary with ID: %s", transcriptID),
+	}, nil
 }
 
 // GetTranscriptSummary implements the TranscriptService RPC method
@@ -186,8 +220,10 @@ func main() {
 	// Main loop to process alerts and send emails
 	for alert := range notificationChannel {
 		fmt.Printf("Processing alert of type '%s', sending email...\n", alert.Type)
-		if err := sendEmail(alert, accessKeyID, secretAccessKey); err != nil {
+		err := sendEmail(alert, accessKeyID, secretAccessKey)
+		if err != nil {
 			log.Printf("Failed to send email: %v", err)
 		}
+		time.Sleep(10 * time.Second) // sleep for 10 seconds, my purposes really should never need more.
 	}
 }

@@ -308,9 +308,12 @@ func (sm *StreamManager) processStream(path string, cancelChan chan bool) {
 
 			log.Printf("Recording from %s to %s", rtspURL, outputFileName)
 
+			// decided to make 600 seconds so that we get a whole conversation. But to try
+			// and not have the server be abused in case I fall asleep for testing, or
+			// something like that. Don't  judge me.
 			cmd := exec.Command("ffmpeg",
 				"-i", rtspURL,
-				"-t", "30", // 30sec stream then restart
+				"-t", "600", // 600sec stream then restart
 				"-vn", // cut out video, only audio added to file
 				"-acodec", "libmp3lame",
 				"-ab", "128k", // Audio bitrate explicitly set
