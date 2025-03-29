@@ -1,4 +1,3 @@
-
 # ---- Step 1: Build Stage ----
 FROM golang:1.23-alpine
 
@@ -6,19 +5,16 @@ FROM golang:1.23-alpine
 RUN apk add --no-cache ffmpeg
 
 # Set working directory inside the container
-WORKDIR /main
+WORKDIR /app
 
-# Copy go mod files separately for better caching
-COPY .. /muse
-COPY go.mod go.sum ./
-RUN go mod download
+# Copy the parent directory (muse) to /app
+COPY ../. .
 
-# Copy the entire source code
-COPY . .
+# Move to the pigeon directory
+WORKDIR /app/pigeon
 
-# Build the Go application (static binary for minimal runtime dependencies)
+# Build the Go application 
 RUN CGO_ENABLED=0 go build -o ./main
 
 # Command to run the application
 CMD ["./main"]
-

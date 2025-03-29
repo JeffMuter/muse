@@ -11,8 +11,8 @@ services:
       - pelican
   pigeon:
     build: 
-      context:    ./pigeon
-      dockerfile: Dockerfile
+      context:    .
+      dockerfile: ./pigeon/Dockerfile
   parrot:
     build: 
       context:    ./parrot
