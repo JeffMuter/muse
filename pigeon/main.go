@@ -110,32 +110,43 @@ func sendEmail(summary *pb.TranscriptSummaryResponse, accessKeyID, secretAccessK
 	// 2. Create an SES service client
 	svc := ses.New(sess)
 
-	// what we have to show:
-	//	TranscriptionSummary string
-	//	TranscriptionTopics  []*TranscriptionTopic
-	//	TranscriptionAlerts  []*TranscriptionAlert
-
 	// 3. Prepare email content
 	recipient := "jefferymuter@yahoo.com" // Must be verified in SES
 	sender := "muterjeffery@gmail.com"    // Must be verified if in sandbox mode
 
-	subject := "Muse Summary: " + string(len(summary.TranscriptionAlerts)) + " Alerts Detected"
+	// Convert alert count to string properly
+	alertCount := fmt.Sprintf("%d", len(summary.TranscriptionAlerts))
+	subject := "Muse Summary: " + alertCount + " Alerts Detected"
 
-	htmlBody := `<h2>Conversation Summary</h2>
+	// Create the HTML body with proper string formatting
+	htmlBody := fmt.Sprintf(`<h2>Conversation Summary</h2>
 		<br>
 
-		<p>` + summary.TranscriptionSummary + `</p>
+		<p>%s</p>
 		<br>
 
 		<h3>Alerts:</h3>
-		<br> 
+		<br>`, summary.TranscriptionSummary)
 
-		` + string(summary.TranscriptionAlerts[0].Type) + `
+	// Add alerts if they exist
+	for i := range summary.TranscriptionAlerts {
+		htmlBody += fmt.Sprintf(`
+		%s
 		<br>
 		<h3>Alert triggered by quote:</h3>
 		<br>
-		"` + summary.TranscriptionTopics[0] + `"
-		<br>`
+		"%s"
+		<br>`, summary.TranscriptionAlerts[i].Type, summary.TranscriptionAlerts[i].Quote)
+	}
+
+	// Create a text version of the email for clients that don't support HTML
+	textBody := fmt.Sprintf("Conversation Summary\n\n%s\n\nAlerts:\n", summary.TranscriptionSummary)
+
+	for i := range summary.TranscriptionAlerts {
+		textBody += fmt.Sprintf("%s\nAlert triggered by quote: \"%s\"\n",
+			summary.TranscriptionAlerts[i].Type,
+			summary.TranscriptionAlerts[i].Quote)
+	}
 
 	// 4. Specify email parameters
 	input := &ses.SendEmailInput{
