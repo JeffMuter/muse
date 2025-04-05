@@ -1,14 +1,13 @@
-# ---- Step 1: Build Stage ----
 FROM golang:1.23-alpine
 
-# Install ffmpeg
+# Install ffmpeg if needed
 RUN apk add --no-cache ffmpeg
 
-# Set working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy the parent directory (muse) to /app
-COPY ../. .
+# Copy the entire repository
+COPY . .
 
 # Move to the pigeon directory
 WORKDIR /app/pigeon

@@ -1,23 +1,15 @@
-# ---- Step 1: Build Stage ----
 FROM golang:1.23-alpine
 
-# Set working directory inside the container
-WORKDIR /main
+WORKDIR /app
 
-# Copy go mod files first
-COPY go.mod go.sum ./
+# Copy the entire repository with proper structure
+COPY . .
 
-# Important: Copy the parent module that's being referenced via 'replace'
-COPY .. /muse/
-
-# Now modify the replace directive to point to the copied location
-RUN go mod edit -replace=github.com/jeffmuter/muse=/muse
+# This ensures that go.mod and related files are in the working directory
+WORKDIR /app/parrot
 
 # Now download dependencies
 RUN go mod download
-
-# Copy the rest of the source code
-COPY . .
 
 # Build the Go application
 RUN CGO_ENABLED=0 go build -o ./main

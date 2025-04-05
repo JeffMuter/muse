@@ -1,21 +1,21 @@
 services:
   pelican:
     build: 
-      context:    ./pelican
-      dockerfile: Dockerfile
+      context: .  # Use the entire repo as context
+      dockerfile: pelican/Dockerfile
   simulator:
     build:
-      context:    ./simulator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: simulator/Dockerfile
     depends_on: 
       - pelican
   pigeon:
     build: 
-      context:    ./pigeon
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: pigeon/Dockerfile
   parrot:
     build: 
-      context:    ./parrot
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: parrot/Dockerfile
     depends_on: 
       - pigeon
