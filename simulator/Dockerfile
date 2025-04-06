@@ -10,7 +10,7 @@ WORKDIR /app
 COPY . .
 
 # Change to pelican directory
-WORKDIR /app/pelican
+WORKDIR /app/simulator
 
 # Build the Go application (static binary for minimal runtime dependencies)
 RUN CGO_ENABLED=0 go build -o ./main

@@ -116,28 +116,9 @@ func sendEmail(summary *pb.TranscriptSummaryResponse, accessKeyID, secretAccessK
 
 	// Convert alert count to string properly
 	alertCount := fmt.Sprintf("%d", len(summary.TranscriptionAlerts))
-	subject := "Muse Summary: " + alertCount + " Alerts Detected"
+	emailSubject := "Muse Summary: " + alertCount + " Alerts Detected"
 
-	// Create the HTML body with proper string formatting
-	htmlBody := fmt.Sprintf(`<h2>Conversation Summary</h2>
-		<br>
-
-		<p>%s</p>
-		<br>
-
-		<h3>Alerts:</h3>
-		<br>`, summary.TranscriptionSummary)
-
-	// Add alerts if they exist
-	for i := range summary.TranscriptionAlerts {
-		htmlBody += fmt.Sprintf(`
-		%s
-		<br>
-		<h3>Alert triggered by quote:</h3>
-		<br>
-		"%s"
-		<br>`, summary.TranscriptionAlerts[i].Type, summary.TranscriptionAlerts[i].Quote)
-	}
+	emailContent, err := formatEmail(summary)
 
 	// Create a text version of the email for clients that don't support HTML
 	textBody := fmt.Sprintf("Conversation Summary\n\n%s\n\nAlerts:\n", summary.TranscriptionSummary)
@@ -159,7 +140,7 @@ func sendEmail(summary *pb.TranscriptSummaryResponse, accessKeyID, secretAccessK
 		Message: &ses.Message{
 			Subject: &ses.Content{
 				Charset: aws.String("UTF-8"),
-				Data:    aws.String(subject),
+				Data:    aws.String(emailSubject),
 			},
 			Body: &ses.Body{
 				Text: &ses.Content{
@@ -168,7 +149,7 @@ func sendEmail(summary *pb.TranscriptSummaryResponse, accessKeyID, secretAccessK
 				},
 				Html: &ses.Content{
 					Charset: aws.String("UTF-8"),
-					Data:    aws.String(htmlBody),
+					Data:    aws.String(emailContent),
 				},
 			},
 		},
@@ -235,4 +216,51 @@ func main() {
 		}
 		time.Sleep(10 * time.Second) // sleep for 10 seconds, my purposes really should never need more.
 	}
+}
+
+func formatEmail(summary *pb.TranscriptSummaryResponse) (string, error) {
+	var emailBody string
+
+	// Create the HTML body with proper string formatting
+	emailBody = fmt.Sprintf(`
+		<h1>New Conversation Detected:</h1>
+		<br>
+
+		<h2>Whole Conversation Summary:</h2>
+		<br>
+		
+		<p>%s</p>
+		<br>
+
+		<h3>Alerts:</h3>
+		<br>`, summary.TranscriptionSummary)
+
+	// Add alerts if they exist
+	for i := range summary.TranscriptionAlerts {
+		emailBody += fmt.Sprintf(`
+		%s
+		<br>
+		<h3>Alert triggered by quote:</h3>
+		<br>
+		"%s"
+		<br>`, summary.TranscriptionAlerts[i].Type, summary.TranscriptionAlerts[i].Quote)
+	}
+
+	// setup topic section
+	emailBody += fmt.Sprintf(`
+		<h3>Topics:</h3>
+		<br>
+		`)
+
+	for i := range summary.TranscriptionTopics {
+		emailBody += fmt.Sprintf(`
+			<br>
+			<h3>%s</h3>
+			<br>
+			Description: %s
+			<br>
+			`, summary.TranscriptionTopics[i].Name, summary.TranscriptionTopics[i].Description)
+	}
+
+	return emailBody, nil
 }
