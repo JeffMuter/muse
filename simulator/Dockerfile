@@ -1,18 +1,16 @@
-# ---- Step 1: Build Stage ----
 FROM golang:1.23-alpine
 
 # Install ffmpeg
 RUN apk add --no-cache ffmpeg
 
 # Set working directory inside the container
-WORKDIR /main
+WORKDIR /app
 
-# Copy go mod files separately for better caching
-COPY go.mod ./
-RUN go mod download
-
-# Copy the entire source code
+# Copy the entire repository
 COPY . .
+
+# Change to pelican directory
+WORKDIR /app/pelican
 
 # Build the Go application (static binary for minimal runtime dependencies)
 RUN CGO_ENABLED=0 go build -o ./main
