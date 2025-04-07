@@ -112,7 +112,7 @@ func main() {
 		log.Fatalf("error creating new aws session: %v\n", err)
 	}
 
-	protoConn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	protoConn, err := grpc.Dial("pigeon:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}
