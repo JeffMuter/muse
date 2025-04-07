@@ -39,7 +39,7 @@ func NewServerHandler(streamMgr *StreamManager) *ServerHandler {
 
 // called when a connection is opened.
 func (sh *ServerHandler) OnConnOpen(ctx *gortsplib.ServerHandlerOnConnOpenCtx) {
-	log.Printf("conn opened")
+	// log.Printf("conn opened")
 }
 
 // called when a connection is closed.
@@ -49,12 +49,12 @@ func (sh *ServerHandler) OnConnClose(ctx *gortsplib.ServerHandlerOnConnCloseCtx)
 
 // called when a session is opened.
 func (sh *ServerHandler) OnSessionOpen(ctx *gortsplib.ServerHandlerOnSessionOpenCtx) {
-	log.Printf("session opened")
+	// log.Printf("session opened")
 }
 
 // called when a session is closed.
 func (sh *ServerHandler) OnSessionClose(ctx *gortsplib.ServerHandlerOnSessionCloseCtx) {
-	log.Printf("session closed")
+	//	log.Printf("session closed")
 
 	sh.mutex.Lock()
 	defer sh.mutex.Unlock()
@@ -78,7 +78,7 @@ func (sh *ServerHandler) OnSessionClose(ctx *gortsplib.ServerHandlerOnSessionClo
 
 // called when receiving a DESCRIBE request.
 func (sh *ServerHandler) OnDescribe(ctx *gortsplib.ServerHandlerOnDescribeCtx) (*base.Response, *gortsplib.ServerStream, error) {
-	log.Printf("Received DESCRIBE request for path: %s", ctx.Path)
+	//	log.Printf("Received DESCRIBE request for path: %s", ctx.Path)
 
 	sh.mutex.RLock()
 	defer sh.mutex.RUnlock()
@@ -151,7 +151,7 @@ func (sh *ServerHandler) OnAnnounce(ctx *gortsplib.ServerHandlerOnAnnounceCtx) (
 // called when receiving a SETUP request.
 func (sh *ServerHandler) OnSetup(ctx *gortsplib.ServerHandlerOnSetupCtx) (*base.Response, *gortsplib.ServerStream, error) {
 	// This is a client trying to read or publish to the stream
-	log.Printf("Received SETUP request for path: %s", ctx.Path)
+	//	log.Printf("Received SETUP request for path: %s", ctx.Path)
 
 	sh.mutex.RLock()
 	defer sh.mutex.RUnlock()
