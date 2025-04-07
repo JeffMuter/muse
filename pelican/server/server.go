@@ -313,7 +313,7 @@ func (sm *StreamManager) processStream(path string, cancelChan chan bool) {
 			// something like that. Don't  judge me.
 			cmd := exec.Command("ffmpeg",
 				"-i", rtspURL,
-				"-t", "10", // 600sec stream then restart
+				"-t", "600", // 600sec stream then restart
 				"-vn", // cut out video, only audio added to file
 				"-acodec", "libmp3lame",
 				"-ab", "128k", // Audio bitrate explicitly set
