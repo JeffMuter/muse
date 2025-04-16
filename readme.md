@@ -20,7 +20,6 @@ Technology:
 
 Golang     // best language for concurrency and writing servers
 Docker     // for deploying microservice applications in a more automated way
-SQLite     // not enough concurrent writes to justify using anything more intense
 AWS        // cloud services i am most familiar with, but primarily used for the transcribe service
 S3         // used to store audio / video / json output from transcribe
 SQS        // simple queue service, saves parrot from checking S3, and basically 10% of the price.
@@ -30,7 +29,7 @@ Transcribe // used to get audio transcriptions from audio files, converted into 
 FFMPEG     // for working with audio/video
 
 
-you'll need to add env files to each of the following repos. and you'll need to populat the following variables:
+you'll need to add env files to each of the following repos. and you'll need to populate the following variables:
 
 pigeon .env:
 
