@@ -1,0 +1,8 @@
+CREATE TABLE transcripts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    transcript_id TEXT NOT NULL UNIQUE,
+    transcript_text TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
