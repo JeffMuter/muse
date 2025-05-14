@@ -19,3 +19,7 @@ services:
       dockerfile: parrot/Dockerfile
     depends_on: 
       - pigeon
+  owl:
+    build:
+      context: .
+      dockerfile: owl/Dockerfile
