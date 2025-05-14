@@ -11,13 +11,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to initialize database... %v\n", err)
 	}
-	owlService := service.NewOwlService(db)
-	port := "50052" // Different from pigeon's port
 
-	// Start gRPC server
-	if err := server.StartGRPCServer(port, owlService); err != nil {
-		log.Fatal("Failed to start gRPC server:", err)
-	}
 }
 
 func initDatabase() (*sql.DB, error) {
