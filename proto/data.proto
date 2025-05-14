@@ -9,6 +9,10 @@ service PigeonService {
   rpc ProcessTranscriptSummary (TranscriptSummaryResponse) returns (ProcessingResult);
 }
 
+service OwlService {
+  rpc ProcessWriteRequest (WriteRequest) returns (writeResponse);
+}
+
 message TranscriptRequest {
   string transcript_id = 1;
 }
