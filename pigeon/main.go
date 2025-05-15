@@ -36,7 +36,7 @@ type rpcServer struct {
 }
 
 // ProcessTranscriptSummary implements the PigeonServiceServer interface
-func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.TranscriptSummaryResponse) (*pb.ProcessingResult, error) {
+func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.TranscriptSummaryResponse) (*pb.PigeonTranscriptResult, error) {
 	fmt.Printf("Received transcript summary for processing with ID: %s", req.GetTranscriptId())
 
 	// Process the transcript summary data
@@ -60,7 +60,7 @@ func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.Tra
 	rpcS.notificationChannel <- req
 
 	// Create and return a success result
-	return &pb.ProcessingResult{
+	return &pb.TranscriptSummaryResponse{
 		Success: true,
 		Message: fmt.Sprintf("Successfully processed transcript summary with ID: %s", transcriptID),
 	}, nil

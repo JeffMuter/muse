@@ -6,11 +6,26 @@ option go_package = "github.com/yourusername/transcript/proto";
 
 // Service definition
 service PigeonService {
-  rpc ProcessTranscriptSummary (TranscriptSummaryResponse) returns (ProcessingResult);
+  rpc ProcessTranscriptSummary (TranscriptSummaryRequest) returns (PigeonTranscriptResponse);
 }
 
 service OwlService {
-  rpc ProcessWriteRequest (WriteRequest) returns (writeResponse);
+  rpc ProcessWriteRequest (DbWriteRequest) returns (DbWriteResponse);
+}
+
+// request to owl service needs this to formulate a valid query to write to the db
+message DbWriteRequest {
+  string query = 1; // raw sql string
+  repeated string params = 2; // contains the variable values like the value of name: "john", escaping allows to avoid sql injection here & type safety before runtime
+  string request_id = 3; // helps identify where the request came from "service1 called this in func123", etc..
+}
+
+// Owl returns this on request
+message DbWriteResponse{
+  bool success = 1;
+  string error_message = 2;
+  int64 affected_rows = 3;
+  string generated_id = 4; // for id of new row id if successful
 }
 
 message TranscriptRequest {
@@ -18,7 +33,7 @@ message TranscriptRequest {
 }
 
 // Response message that contains the transcript summary data
-message TranscriptSummaryResponse {
+message TranscriptSummaryRequest {
   string transcription_summary = 1;
   repeated TranscriptionTopic transcription_topics = 2;
   repeated TranscriptionAlert transcription_alerts = 3;
@@ -37,7 +52,8 @@ message TranscriptionAlert {
 }
 
 // New result message for processing confirmation
-message ProcessingResult {
+message PigeonTranscriptResponse {
   bool success = 1;
   string message = 2;
 }
+

@@ -48,7 +48,7 @@ type anthropicResponseJson struct {
 	} `json:"alerts"`
 }
 
-type TranscriptSummaryResponse struct {
+type TranscriptSummaryRequest struct {
 	TranscriptionSummary string               `json:"transcriptionSummary"`
 	TranscriptionTopics  []TranscriptionTopic `json:"transcriptionTopics"`
 	TranscriptionAlerts  []TranscriptionAlert `json:"transcriptionAlerts,omitempty"`
@@ -278,7 +278,7 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		}
 
 		// Create the gRPC message with Anthropic data
-		summary := &pb.TranscriptSummaryResponse{
+		summary := &pb.TranscriptSummaryRequest{
 			TranscriptionSummary: summaryData.TranscriptionSummary,
 			TranscriptId:         filepath.Base(fileName), // Using the new field we added
 			TranscriptionTopics:  make([]*pb.TranscriptionTopic, len(summaryData.TranscriptionTopics)),
