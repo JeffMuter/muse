@@ -278,7 +278,7 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		}
 
 		// Create the gRPC message with Anthropic data
-		summary := &pb.TranscriptSummaryRequest{
+		summary := &pb.TranscriptRequest{
 			TranscriptionSummary: summaryData.TranscriptionSummary,
 			TranscriptId:         filepath.Base(fileName), // Using the new field we added
 			TranscriptionTopics:  make([]*pb.TranscriptionTopic, len(summaryData.TranscriptionTopics)),
@@ -379,9 +379,9 @@ func createTranscriptSummaryTool() map[string]interface{} {
 	}
 }
 
-func getAISummaryFromTranscript(transcript string, anthropicKey string, client anthropic.Client) (TranscriptSummaryResponse, error) {
+func getAISummaryFromTranscript(transcript string, anthropicKey string, client anthropic.Client) (TranscriptSummaryRequest, error) {
 
-	var summary TranscriptSummaryResponse
+	var summary TranscriptSummaryRequest
 
 	// Create tool definition
 	transcriptTool := createTranscriptSummaryTool()
