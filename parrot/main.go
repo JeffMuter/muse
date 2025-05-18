@@ -278,7 +278,7 @@ func sendEmailsFromMessages(messages map[string]string, sess *session.Session, c
 		}
 
 		// Create the gRPC message with Anthropic data
-		summary := &pb.TranscriptSummaryResponse{
+		summary := &pb.TranscriptSummaryRequest{
 			TranscriptionSummary: summaryData.TranscriptionSummary,
 			TranscriptId:         filepath.Base(fileName), // Using the new field we added
 			TranscriptionTopics:  make([]*pb.TranscriptionTopic, len(summaryData.TranscriptionTopics)),
