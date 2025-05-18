@@ -32,11 +32,11 @@ type rpcServer struct {
 	pb.UnimplementedPigeonServiceServer
 	transcripts         map[string]*TranscriptData
 	mu                  sync.Mutex
-	notificationChannel chan *pb.TranscriptSummaryResponse
+	notificationChannel chan *pb.TranscriptSummaryRequest
 }
 
 // ProcessTranscriptSummary implements the PigeonServiceServer interface
-func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.TranscriptSummaryResponse) (*pb.PigeonTranscriptResult, error) {
+func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.TranscriptSummaryRequest) (*pb.PigeonTranscriptResponse, error) {
 	fmt.Printf("Received transcript summary for processing with ID: %s", req.GetTranscriptId())
 
 	// Process the transcript summary data
@@ -60,19 +60,19 @@ func (rpcS *rpcServer) ProcessTranscriptSummary(ctx context.Context, req *pb.Tra
 	rpcS.notificationChannel <- req
 
 	// Create and return a success result
-	return &pb.TranscriptSummaryResponse{
+	return &pb.PigeonTranscriptResponse{
 		Success: true,
 		Message: fmt.Sprintf("Successfully processed transcript summary with ID: %s", transcriptID),
 	}, nil
 }
 
 // GetTranscriptSummary implements the TranscriptService RPC method
-func (rpcS *rpcServer) GetTranscriptSummary(ctx context.Context, req *pb.TranscriptRequest) (*pb.TranscriptSummaryResponse, error) {
+func (rpcS *rpcServer) GetTranscriptSummary(ctx context.Context, req *pb.TranscriptRequest) (*pb.TranscriptSummaryRequest, error) {
 	transcriptID := req.GetTranscriptId()
 	log.Printf("Received request for transcript summary with ID: %s", transcriptID)
 
 	// Create a response with transcript summary information
-	response := &pb.TranscriptSummaryResponse{
+	response := &pb.TranscriptSummaryRequest{
 		TranscriptionSummary: fmt.Sprintf("Summary for transcript %s", transcriptID),
 		TranscriptionTopics: []*pb.TranscriptionTopic{
 			{
@@ -97,7 +97,7 @@ func (rpcS *rpcServer) GetTranscriptSummary(ctx context.Context, req *pb.Transcr
 }
 
 // sendEmail sends an email notification for an alert
-func sendEmail(summary *pb.TranscriptSummaryResponse, accessKeyID, secretAccessKey string) error {
+func sendEmail(summary *pb.TranscriptSummaryRequest, accessKeyID, secretAccessKey string) error {
 	// 1. Configure AWS session
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String("us-east-2"),
@@ -179,7 +179,7 @@ func main() {
 	// Create notification channel for alerts that need emails
 	//	notificationChannel := make(chan *pb.TranscriptionAlert, 100)
 
-	notificationChannel := make(chan *pb.TranscriptSummaryResponse, 100)
+	notificationChannel := make(chan *pb.TranscriptSummaryRequest, 100)
 
 	// Initialize the server
 	server := &rpcServer{
@@ -218,7 +218,7 @@ func main() {
 	}
 }
 
-func formatEmail(summary *pb.TranscriptSummaryResponse) (string, error) {
+func formatEmail(summary *pb.TranscriptSummaryRequest) (string, error) {
 	var emailBody string
 
 	// Create the HTML body with proper string formatting
