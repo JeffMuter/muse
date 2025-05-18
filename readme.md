@@ -1,3 +1,6 @@
+proto command: 
+protoc --go_out=paths=source_relative:. --go-grpc_out=paths=source_relative:. proto/data.proto
+
 this project is still under development. while this service does work, it does require you to make an .env file in the /muse directory, you'll need to add a few .env files. I'll describe the process at the bottom of this readme.
 
 this project is broken into a few microservices.
