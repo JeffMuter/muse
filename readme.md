@@ -7,6 +7,8 @@ this project is broken into a few microservices.
 
 the overall goal of the project is to have multiple security cameras that use rtsp to feed video to a server.
 
+Owl: database service. Contains the sqlite db, and acts as the point of contact of all other services. Because most services perform writes, all of those services depend on Owl, making Owl a very important service. The main reason we're using sqlite still stands, that there isn't enough writing/s to justify using something heavier. Reads are 'blazingly' fast. 
+
 Simulator: this is just a service for testing the actual project. When you run that golang service, it will effectively pretend to be 10 security cameras, sending an mp4 file on a loop using ffmpeg. I added a couple random video files for testing with some audio in it. Does nothing else, feel free to swap out the mp4 files with your own to test.
 
 Pelican: this rtsp/ffmpeg using server is named pelican. the pelican service is responsible for ingesting rtsp video & or audio feeds, and converting them into mp3 files, just the audio. i chose ffmpeg for this. after this, pelican sends these files to aws S3 and repeats this for any number of feeds. i have tested a bit, and confirmed it can handle at least 10 video feeds at the same time.
@@ -30,6 +32,7 @@ SES        // simple email service. Sends email. Duh. Free until you start reall
 Lambda     // used to activate aws-transcribe in an automated way, and send json from it back to the parrot service
 Transcribe // used to get audio transcriptions from audio files, converted into json format
 FFMPEG     // for working with audio/video
+Sqlite     // database. not enough concurrent writing to worry about performance.
 
 
 you'll need to add env files to each of the following repos. and you'll need to populate the following variables:
