@@ -1,17 +1,18 @@
-package owl
+package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 )
 
 func main() {
-
-	db, err := initDatabase()
+	// use db instead of _ after testing
+	_, err := initDatabase()
 	if err != nil {
 		log.Fatal("failed to initialize database... %v\n", err)
 	}
-
+	fmt.Println("db initialized successfully...")
 }
 
 func initDatabase() (*sql.DB, error) {
