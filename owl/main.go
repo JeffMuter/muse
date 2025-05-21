@@ -4,13 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
 func main() {
 	// use db instead of _ after testing
 	_, err := initDatabase()
 	if err != nil {
-		log.Fatal("failed to initialize database... %v\n", err)
+		log.Fatalf("failed to initialize database... %v\n", err)
 	}
 	fmt.Println("db initialized successfully...")
 }
